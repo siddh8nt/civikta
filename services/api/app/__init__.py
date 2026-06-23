@@ -1,0 +1,1 @@
+"""CIVIKTA backend API package."""
