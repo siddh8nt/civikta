@@ -1,17 +1,7 @@
-# Core API (runs the full scaffold with zero external services)
 fastapi>=0.115,<1.0
 uvicorn[standard]>=0.30,<1.0
 pydantic>=2.7,<3.0
 pydantic-settings>=2.3,<3.0
 httpx>=0.27,<1.0
-
-# CIVIKTA_LLM=gemini  (Google AI Studio key)
 google-genai>=2.0
-
-# --- Enable per seam when you wire the real implementation ---
-# CIVIKTA_REPO=supabase
-# supabase>=2.4
-# CIVIKTA_AUTH=firebase
-# firebase-admin>=6.5
-# Agentic pipeline (ADK)
-# google-adk>=0.1
+supabase>=2.4

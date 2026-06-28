@@ -14,6 +14,7 @@ from app.llm.base import LLMClient
 from app.repositories import get_repository
 from app.repositories.base import Repository
 from app.services.ai_triage_service import AITriageService
+from app.services.analytics_service import AnalyticsService
 from app.services.authority_service import AuthorityService
 from app.services.corroboration_service import CorroborationService
 from app.services.duplicate_detection_service import DuplicateDetectionService
@@ -41,6 +42,7 @@ class Services:
     feed: FeedService
     authority: AuthorityService
     oversight: OversightService
+    analytics: AnalyticsService
 
 
 @lru_cache
@@ -49,7 +51,8 @@ def get_services() -> Services:
     llm = get_llm_client()
 
     urgency = UrgencyScoreService()
-    geo = GeoService()
+    supabase_client = getattr(repo, "_client", None)
+    geo = GeoService(supabase_client=supabase_client)
     routing = RoutingService(repo)
     ai_triage = AITriageService(llm)
     duplicates = DuplicateDetectionService(repo, llm)
@@ -59,9 +62,11 @@ def get_services() -> Services:
     feed = FeedService(repo, issues)
     authority = AuthorityService(repo, issues)
     oversight = OversightService(repo, llm)
+    analytics = AnalyticsService(repo, llm)
 
     return Services(
         repo=repo, llm=llm, ai_triage=ai_triage, geo=geo, routing=routing,
         urgency=urgency, duplicates=duplicates, reports=reports, issues=issues,
-        corroboration=corroboration, feed=feed, authority=authority, oversight=oversight,
+        corroboration=corroboration, feed=feed, authority=authority,
+        oversight=oversight, analytics=analytics,
     )

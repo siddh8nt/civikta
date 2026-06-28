@@ -47,6 +47,7 @@ class IssueRecord(BaseModel):
     landmark: str | None = None
 
     issue_category_slug: str | None = None
+    issue_subcategory_slug: str | None = None    # taxonomy L2
     issue_type_slug: str | None = None
     asset_type_slug: str | None = None
 
@@ -60,6 +61,9 @@ class IssueRecord(BaseModel):
     obstruction_flag: bool = False
     health_hazard_flag: bool = False
     public_safety_flag: bool = False
+    impact_tags: list[str] = Field(default_factory=list)
+    persistence_type: str = "new"               # new | recurring | chronic
+    false_closure_suspected: bool = False
 
     road_class: str | None = None
     drain_type: str | None = None
@@ -73,6 +77,8 @@ class IssueRecord(BaseModel):
     secondary_authority_slug: str | None = None
     routing_confidence: float | None = None
     routing_reason: dict = Field(default_factory=dict)
+
+    cover_media_url: str | None = None
 
 
 class IssueEventRecord(BaseModel):

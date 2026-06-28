@@ -31,6 +31,7 @@ class RepoKind(str, Enum):
 class AuthKind(str, Enum):
     stub = "stub"
     firebase = "firebase"
+    supabase = "supabase"
 
 
 class Settings(BaseSettings):
@@ -44,14 +45,19 @@ class Settings(BaseSettings):
 
     civikta_cors_origins: str = "http://localhost:3000"
 
-    # --- Gemini / Google AI Studio ---
+    # --- Gemini / Google AI Studio (free tier) ---
     gemini_api_key: str | None = None
-    gemini_model: str = "gemini-2.0-flash"
+    gemini_model: str = "gemini-2.5-flash"
     vertex_embedding_model: str = "text-embedding-004"
+
+    # --- Vertex AI / Google Agent Platform (GCP credits, no rate limits) ---
+    gcp_project: str | None = None
+    gcp_location: str = "us-central1"
 
     # --- Supabase ---
     supabase_url: str | None = None
     supabase_service_key: str | None = None
+    supabase_storage_bucket: str = "civikta-media"
 
     # --- Firebase ---
     firebase_project_id: str | None = None

@@ -20,10 +20,32 @@ class ReportService:
             latitude=payload.latitude,
             longitude=payload.longitude,
             merge_decision="pending",
+            image_data=payload.image_data,
         )
         self.repo.add_report(report)
+        # Persist pre-uploaded URLs (e.g. from frontend Storage upload)
         for url in payload.media_urls:
             self.repo.add_media(IssueMediaRecord(report_id=report.id, storage_url=url))
+        # Upload base64 images to storage and save persistent URLs
+        for idx, data_url in enumerate(payload.image_data or []):
+            try:
+                storage_url = self.repo.upload_image_data(
+                    data_url, f"reports/{report.id}/{idx}"
+                )
+                self.repo.add_media(IssueMediaRecord(report_id=report.id, storage_url=storage_url))
+            except Exception:
+                pass  # storage unavailable — skip silently, analysis still proceeds
+        # Upload raw audio recording — Gemini receives the actual audio, not just text
+        if payload.audio_data:
+            try:
+                storage_url = self.repo.upload_image_data(
+                    payload.audio_data, f"reports/{report.id}/voice"
+                )
+                self.repo.add_media(IssueMediaRecord(
+                    report_id=report.id, media_type="audio", storage_url=storage_url
+                ))
+            except Exception:
+                pass  # storage unavailable — transcript in raw_description is the fallback
         return report
 
     def attach_media(self, report_id: str, media: MediaAttach) -> IssueMediaRecord:

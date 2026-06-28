@@ -1,4 +1,5 @@
 "use client";
+import { statusLabel } from "@/lib/labels";
 
 /**
  * Feed map (PRD §8.3). When NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set:
@@ -55,6 +56,7 @@ function FeedMapInner({ issues }: { issues: IssueSummary[] }) {
         gestureHandling="cooperative"
         disableDefaultUI
         zoomControl
+        mapId="civikta_feed"
         onClick={() => setSelected(null)}
       >
         {issues.map(
@@ -87,7 +89,7 @@ function FeedMapInner({ issues }: { issues: IssueSummary[] }) {
             <div className="min-w-0">
               <p className="truncate font-medium text-sm">{selected.title}</p>
               <p className="mt-0.5 text-xs text-slate-500">
-                🔥 {selected.urgency_score.toFixed(1)} · {selected.status.replace(/_/g, " ")} ·{" "}
+                🔥 {selected.urgency_score.toFixed(1)} · {statusLabel(selected.status)} ·{" "}
                 {selected.corroboration_count} corroborations
               </p>
             </div>

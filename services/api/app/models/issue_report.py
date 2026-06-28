@@ -28,6 +28,7 @@ class IssueReportRecord(BaseModel):
     raw_title: str | None = None
     raw_description: str | None = None
     media_summary: str | None = None
+    image_data: list[str] = Field(default_factory=list)  # compressed base64 images, in-memory only
 
     latitude: float | None = None
     longitude: float | None = None

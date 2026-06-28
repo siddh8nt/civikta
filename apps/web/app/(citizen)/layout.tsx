@@ -1,7 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+import { TopBar } from "@/components/TopBar";
+import { hasCompletedOnboarding } from "@/lib/user";
 
 const NAV = [
   { href: "/my-locality", label: "Locality", icon: "🗺️" },
@@ -11,23 +14,28 @@ const NAV = [
 
 export default function CitizenLayout({ children }: { children: React.ReactNode }) {
   const path = usePathname();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!hasCompletedOnboarding()) {
+      router.replace("/onboarding");
+    }
+  }, [router]);
+
   return (
-    <div className="app-shell pb-16">
+    <div className="app-shell pt-10 pb-16">
+      <TopBar />
       {children}
       <nav className="fixed bottom-0 left-1/2 z-20 flex w-full max-w-[480px] -translate-x-1/2 border-t border-slate-200 bg-white">
         {NAV.map((n) => {
           const active = path === n.href || path.startsWith(n.href + "/");
+          const cls = `flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${active ? "text-brand" : "text-slate-400"}`;
+          // All nav tabs use hard navigation so the phone always loads the latest JS
           return (
-            <Link
-              key={n.href}
-              href={n.href}
-              className={`flex flex-1 flex-col items-center gap-0.5 py-2 text-xs ${
-                active ? "text-brand" : "text-slate-400"
-              }`}
-            >
+            <a key={n.href} href={n.href} className={cls}>
               <span className="text-lg">{n.icon}</span>
               {n.label}
-            </Link>
+            </a>
           );
         })}
       </nav>

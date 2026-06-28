@@ -16,10 +16,11 @@ async def authority_queue(
     authority: str | None = Query(None, description="authority slug"),
     status: str | None = Query(None),
     ward_no: int | None = Query(None),
+    severity: str | None = Query(None, description="low | medium | high | critical"),
     sort: str = Query("urgency", description="urgency | corroboration | recent"),
     services: Services = Depends(get_services),
 ) -> list[IssueSummary]:
-    return services.authority.queue(authority, status=status, ward_no=ward_no, sort=sort)
+    return services.authority.queue(authority, status=status, ward_no=ward_no, severity=severity, sort=sort)
 
 
 @router.get("/issues/{issue_id}", response_model=IssueDetail)
@@ -41,3 +42,9 @@ async def update_status(
     if not detail:
         raise HTTPException(404, "issue not found")
     return detail
+
+
+@router.get("/escalations", response_model=list[IssueSummary])
+async def get_escalations(services: Services = Depends(get_services)) -> list[IssueSummary]:
+    """Issues that have breached their deadline or have mass false-resolution disputes."""
+    return services.authority.get_escalations()

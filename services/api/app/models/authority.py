@@ -11,3 +11,6 @@ class AuthorityRecord(BaseModel):
     department_name: str | None = None
     authority_family: str
     local_body_scope: str | None = None
+    category_slugs: list[str] = []
+    sla_target_hours: int | None = None
+    contact_portal_url: str | None = None

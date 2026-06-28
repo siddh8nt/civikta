@@ -1,14 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { IssueSummary } from "@/lib/types";
 import { IssueCard } from "@/components/IssueCard";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
+import { getUserLocation } from "@/lib/user";
 
 // default center: Lajpat Nagar (matches seeded demo data)
-const DEFAULT = { lat: 28.5677, lng: 77.2433 };
+const FALLBACK = { lat: 28.5677, lng: 77.2433 };
+
+function distKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const TEST_MODE = false;
 
 const FILTERS = [
   { slug: null, label: "All" },
@@ -20,6 +33,15 @@ const FILTERS = [
 ];
 
 export default function MyLocalityPage() {
+  return (
+    <Suspense>
+      <MyLocalityInner />
+    </Suspense>
+  );
+}
+
+function MyLocalityInner() {
+  const searchParams = useSearchParams();
   const [view, setView] = useState<"feed" | "map">("feed");
   const [issues, setIssues] = useState<IssueSummary[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
@@ -27,30 +49,46 @@ export default function MyLocalityPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let center = DEFAULT;
+    // Priority: URL params (from onboarding) → saved location → GPS → fallback
+    const urlLat = searchParams.get("lat");
+    const urlLng = searchParams.get("lng");
+    const saved = getUserLocation();
+
     const load = (c: { lat: number; lng: number }) =>
       api
         .feedNearby(c.lat, c.lng, 8000)
-        .then(setIssues)
+        .then((issues) => {
+          const sorted = [...issues].sort((a, b) => {
+            const da = (a.latitude != null && a.longitude != null) ? distKm(c.lat, c.lng, a.latitude, a.longitude) : Infinity;
+            const db = (b.latitude != null && b.longitude != null) ? distKm(c.lat, c.lng, b.latitude, b.longitude) : Infinity;
+            return da - db;
+          });
+          setIssues(sorted);
+        })
         .catch((e) => setError(String(e)))
         .finally(() => setLoading(false));
 
-    if (typeof navigator !== "undefined" && navigator.geolocation) {
+    if (urlLat && urlLng) {
+      load({ lat: parseFloat(urlLat), lng: parseFloat(urlLng) });
+    } else if (saved) {
+      load({ lat: saved.lat, lng: saved.lng });
+    } else if (typeof navigator !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => load({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => load(center),
+        () => load(FALLBACK),
         { timeout: 4000 },
       );
     } else {
-      load(center);
+      load(FALLBACK);
     }
-  }, []);
+  }, [searchParams]);
 
-  const shown = filter ? issues.filter((i) => i.issue_category_slug === filter) : issues;
+  const visible = TEST_MODE ? issues.filter((i) => i.ward_name === "__TEST__") : issues;
+  const shown = filter ? visible.filter((i) => i.issue_category_slug === filter) : visible;
 
   return (
     <main>
-      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 px-4 pb-2 pt-4 backdrop-blur">
+      <header className="sticky top-10 z-10 border-b border-slate-200 bg-white/95 px-4 pb-2 pt-4 backdrop-blur">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold text-brand">My Locality</h1>
           <div className="flex rounded-lg bg-slate-100 p-0.5 text-xs font-medium">
@@ -87,9 +125,10 @@ export default function MyLocalityPage() {
       <div className="p-4">
         {loading && <p className="py-10 text-center text-sm text-slate-400">Loading nearby issues…</p>}
         {error && (
-          <p className="py-10 text-center text-sm text-rose-500">
-            Couldn’t reach the API. Is the backend running on :8000?
-          </p>
+          <div className="py-10 text-center">
+            <p className="text-sm text-rose-500 mb-1">Couldn’t reach the API.</p>
+            <p className="text-xs text-slate-400 break-all px-4">{error}</p>
+          </div>
         )}
         {!loading && !error && view === "map" && <MapPlaceholder issues={shown} />}
         {!loading && !error && view === "feed" && (
@@ -113,3 +152,4 @@ export default function MyLocalityPage() {
     </main>
   );
 }
+

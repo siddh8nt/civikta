@@ -20,6 +20,18 @@ async def get_issue(issue_id: str, services: Services = Depends(get_services)) -
     return detail
 
 
+@router.post("/{issue_id}/request-escalation")
+async def request_escalation(
+    issue_id: str,
+    user: AuthIdentity = Depends(get_current_user),
+    services: Services = Depends(get_services),
+) -> dict:
+    ok = services.issues.request_escalation(issue_id, user.uid)
+    if not ok:
+        raise HTTPException(404, "issue not found")
+    return {"status": "escalation_requested"}
+
+
 @router.post("/{issue_id}/corroborate")
 async def corroborate(
     issue_id: str,

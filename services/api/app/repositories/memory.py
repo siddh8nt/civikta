@@ -18,6 +18,7 @@ class MemoryRepository:
         self._events: list[IssueEventRecord] = []
         self._authorities: dict[str, AuthorityRecord] = {}
         self._routing_rules: list[RoutingRuleRecord] = []
+        self._users: dict[str, dict] = {}
         self._seeded = False
 
     # --- issues ---
@@ -26,7 +27,15 @@ class MemoryRepository:
         return issue
 
     def get_issue(self, issue_id: str) -> IssueRecord | None:
-        return self._issues.get(issue_id)
+        exact = self._issues.get(issue_id)
+        if exact:
+            return exact
+        # Support CIV-XXXXXXXX short-code lookup (first 8 chars, case-insensitive)
+        prefix = issue_id.lower()
+        for iid, issue in self._issues.items():
+            if iid.lower().startswith(prefix):
+                return issue
+        return None
 
     def update_issue(self, issue: IssueRecord) -> IssueRecord:
         self._issues[issue.id] = issue
@@ -112,6 +121,9 @@ class MemoryRepository:
         report_ids = {r.id for r in self.list_reports_for_issue(issue_id)}
         return [m for m in self._media.values() if m.report_id in report_ids]
 
+    def upload_image_data(self, data_url: str, path: str) -> str:
+        return data_url
+
     # --- events ---
     def add_event(self, event: IssueEventRecord) -> IssueEventRecord:
         self._events.append(event)
@@ -130,6 +142,23 @@ class MemoryRepository:
 
     def list_routing_rules(self) -> list[RoutingRuleRecord]:
         return list(self._routing_rules)
+
+    # --- users ---
+    def upsert_user(self, uid: str, data: dict) -> dict:
+        """Store or update user profile. Returns the updated user data."""
+        self._users[uid] = {**self._users.get(uid, {"id": uid}), **data}
+        return self._users[uid]
+
+    def get_user(self, uid: str) -> dict | None:
+        """Retrieve user by UID."""
+        return self._users.get(uid)
+
+    def get_user_by_phone(self, phone: str) -> dict | None:
+        """Retrieve user by phone number."""
+        for user in self._users.values():
+            if user.get("phone") == phone:
+                return user
+        return None
 
     # --- seeding ---
     def seed_demo(self) -> None:

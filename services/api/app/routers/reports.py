@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
 
 from app.core.auth import AuthIdentity, get_current_user
 from app.core.deps import Services, get_services
@@ -26,6 +27,18 @@ def _require_report(services: Services, report_id: str):
     if not report:
         raise HTTPException(404, "report not found")
     return report
+
+
+class _ValidateImagesBody(BaseModel):
+    image_data: list[str]
+
+
+@router.post("/validate-images")
+async def validate_images(
+    payload: _ValidateImagesBody,
+    services: Services = Depends(get_services),
+) -> dict:
+    return await services.llm.validate_images(payload.image_data)
 
 
 @router.post("/draft")

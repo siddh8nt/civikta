@@ -14,6 +14,7 @@ from app.repositories.base import Repository
 from app.schemas.ai import ComplaintAnalysis
 from app.schemas.common import EventType
 from app.schemas.geo import GeoResolution
+from app.seeds.issue_types import subcategory_for_type
 from app.schemas.issue import IssueDetail, IssueSummary, TimelineEvent
 from app.schemas.routing import RoutingResult
 from app.services.urgency_score_service import UrgencyScoreService
@@ -49,6 +50,7 @@ class IssueService:
             locality_name=geo.locality_name,
             landmark=geo.landmark,
             issue_category_slug=analysis.issue_category,
+            issue_subcategory_slug=subcategory_for_type(analysis.issue_type),
             issue_type_slug=analysis.issue_type,
             asset_type_slug=analysis.asset_type,
             severity=analysis.severity.value,
@@ -58,7 +60,7 @@ class IssueService:
             road_class=analysis.road_class,
             drain_type=analysis.drain_type,
             land_owner_hint=analysis.land_owner_hint,
-            ai_summary=analysis.summary,
+            ai_summary=analysis.ai_summary or analysis.summary,
             ai_confidence=analysis.confidence,
             primary_authority_slug=routing.primary_authority_slug,
             secondary_authority_slug=routing.secondary_authority_slug,
@@ -68,13 +70,19 @@ class IssueService:
         issue.summary_embedding = await self.llm.embed(issue.public_summary or issue.title or "")
         issue.urgency_score = self.urgency.compute(issue)
 
-        # link the original report to its canonical issue
-        report.merged_into_issue_id = None
+        # Denormalize cover image so feed never needs a media join
+        first_media = self.repo.list_media_for_report(report.id)
+        if first_media:
+            issue.cover_media_url = first_media[0].storage_url
+
+        # Insert issue BEFORE updating the report — issue_reports.merged_into_issue_id has a FK → issues.id
+        self.repo.add_issue(issue)
+
+        # Now safe to link the original report to its canonical issue
+        report.merged_into_issue_id = issue.id
         report.report_role = "original"
         report.merge_decision = "forced_new"
         self.repo.update_report(report)
-
-        self.repo.add_issue(issue)
         self._event(issue.id, EventType.created, "citizen")
         self._event(issue.id, EventType.classified, "system",
                     {"issue_type": analysis.issue_type, "confidence": analysis.confidence})
@@ -97,6 +105,7 @@ class IssueService:
         return IssueDetail(
             **_issue_base_fields(issue),
             id=issue.id,
+            reporter_id=issue.created_by,
             created_at=issue.created_at,
             updated_at=issue.updated_at,
             canonical_description=issue.canonical_description,
@@ -105,7 +114,7 @@ class IssueService:
             ai_summary=issue.ai_summary,
             ai_confidence=issue.ai_confidence,
             last_corroborated_at=issue.last_corroborated_at,
-            media_urls=[m.storage_url for m in media],
+            media_urls=[m.storage_url for m in media] or ([issue.cover_media_url] if issue.cover_media_url else []),
             timeline=[
                 TimelineEvent(event_type=e.event_type, actor_type=e.actor_type,
                               created_at=e.created_at, payload=e.payload)
@@ -114,14 +123,22 @@ class IssueService:
         )
 
     def to_summary(self, issue: IssueRecord, distance_m: float | None = None) -> IssueSummary:
-        media = self.repo.list_media_for_issue(issue.id)
         return IssueSummary(
             **_issue_base_fields(issue),
             id=issue.id,
             created_at=issue.created_at,
-            cover_media_url=media[0].storage_url if media else None,
+            cover_media_url=issue.cover_media_url,
             distance_m=round(distance_m, 1) if distance_m is not None else None,
         )
+
+    def request_escalation(self, issue_id: str, citizen_uid: str) -> bool:
+        issue = self.repo.get_issue(issue_id)
+        if not issue:
+            return False
+        self._event(issue_id, EventType.escalated_to_oversight, "citizen",
+                    {"requested_by": citizen_uid,
+                     "reason": "Citizen flagged authority non-response — Vertex AI escalation agent notified"})
+        return True
 
     def _event(self, issue_id: str, event_type: EventType, actor_type: str,
                payload: dict | None = None) -> None:
@@ -139,6 +156,7 @@ def _issue_base_fields(issue: IssueRecord) -> dict:
         latitude=issue.latitude,
         longitude=issue.longitude,
         local_body_type=issue.local_body_type,
+        mcd_zone=issue.mcd_zone,
         ward_no=issue.ward_no,
         ward_name=issue.ward_name,
         locality_name=issue.locality_name,

@@ -1,8 +1,9 @@
 """Auth seam.
 
-`AuthProvider` is the contract. `StubAuth` (default) trusts demo headers so the
-app is usable with no Firebase project. `FirebaseAuth` (future) verifies a real
-Firebase ID token — write it, set CIVIKTA_AUTH=firebase, done.
+StubAuth       — trusts X-Demo-User / X-Demo-Role headers (authority/oversight portals).
+SupabaseAuth   — verifies Supabase JWT for citizen requests; falls back to demo headers
+                 for authority/oversight portals that don't send a JWT.
+FirebaseAuth   — future placeholder.
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ from app.core.config import AuthKind, Settings, get_settings
 
 class AuthIdentity(BaseModel):
     uid: str
-    role: str = "citizen"  # citizen / authority / oversight / admin
+    role: str = "citizen"
     name: str | None = None
 
 
@@ -27,8 +28,6 @@ class AuthProvider(Protocol):
 
 
 class StubAuth:
-    """Trusts `X-Demo-User` / `X-Demo-Role` headers; falls back to a fixed demo citizen."""
-
     async def authenticate(self, authorization, demo_user, demo_role) -> AuthIdentity:
         return AuthIdentity(
             uid=demo_user or "demo-citizen",
@@ -37,18 +36,42 @@ class StubAuth:
         )
 
 
-class FirebaseAuth:
-    """Future: verify Firebase ID token via firebase-admin and map UID -> user."""
+class SupabaseAuth:
+    def __init__(self, settings: Settings):
+        from supabase import create_client
+        self._client = create_client(settings.supabase_url, settings.supabase_service_key)
 
     async def authenticate(self, authorization, demo_user, demo_role) -> AuthIdentity:
-        # TODO(firebase): firebase_admin.auth.verify_id_token(token)
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization[7:]
+            try:
+                resp = self._client.auth.get_user(token)
+                user = resp.user
+                if not user:
+                    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+                return AuthIdentity(uid=str(user.id), role="citizen")
+            except HTTPException:
+                raise
+            except Exception:
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
+        # No JWT — fall back to demo headers for authority/oversight portals
+        return AuthIdentity(
+            uid=demo_user or "demo-citizen",
+            role=demo_role or "citizen",
+        )
+
+
+class FirebaseAuth:
+    async def authenticate(self, authorization, demo_user, demo_role) -> AuthIdentity:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="FirebaseAuth not wired yet. Set CIVIKTA_AUTH=stub for local dev.",
+            detail="FirebaseAuth not wired yet.",
         )
 
 
 def get_auth_provider(settings: Settings = Depends(get_settings)) -> AuthProvider:
+    if settings.civikta_auth is AuthKind.supabase:
+        return SupabaseAuth(settings)
     if settings.civikta_auth is AuthKind.firebase:
         return FirebaseAuth()
     return StubAuth()

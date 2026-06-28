@@ -11,7 +11,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import get_settings
-from app.routers import authority, feed, issues, meta, oversight, reports
+from app.routers import analytics, authority, feed, geo, issues, meta, oversight, reports, users
 
 settings = get_settings()
 
@@ -23,14 +23,14 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 for r in (meta.router, reports.router, issues.router, feed.router,
-          authority.router, oversight.router):
+          authority.router, oversight.router, geo.router, users.router, analytics.router):
     app.include_router(r)
 
 

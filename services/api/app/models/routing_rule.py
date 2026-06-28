@@ -17,6 +17,7 @@ class RoutingRuleRecord(BaseModel):
     land_owner_hint: str | None = None
     primary_authority_slug: str = ""
     secondary_authority_slug: str | None = None
+    escalation_authority_slug: str | None = None   # oversight escalation path
     rule_priority: int = 100
     confidence_score: float = 0.8
     notes: str | None = None

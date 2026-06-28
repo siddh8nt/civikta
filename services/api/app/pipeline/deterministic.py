@@ -20,21 +20,27 @@ class DeterministicPipeline:
 
     async def analyze(self, report: IssueReportRecord) -> AnalyzeResult:
         media = self.s.repo.list_media_for_report(report.id)
+
+        # Resolve geo first so we can pass local_body_type into the AI prompt
+        geo = self.s.geo.resolve(report.latitude, report.longitude)
+
+        audio_media = [m for m in media if m.media_type == "audio"]
+        image_media = [m for m in media if m.media_type != "audio"]
         inp = ComplaintAnalysisInput(
             text=report.raw_description or report.raw_title,
-            media_urls=[m.storage_url for m in media],
+            media_urls=[m.storage_url for m in image_media],
+            audio_urls=[m.storage_url for m in audio_media],
+            image_data=report.image_data,
             latitude=report.latitude,
             longitude=report.longitude,
+            local_body_type=geo.local_body_type,
         )
 
-        # 1. AI triage
+        # 1. AI triage (Gemini now derives routing too)
         analysis = await self.s.ai_triage.analyze(inp)
         self.s.reports.apply_analysis(report, analysis)
 
-        # 2. Geo resolve
-        geo = self.s.geo.resolve(report.latitude, report.longitude)
-
-        # 3. Duplicate detection
+        # 2. Duplicate detection
         duplicates = await self.s.duplicates.find_duplicates(
             analysis, report.latitude, report.longitude
         )
@@ -66,7 +72,10 @@ class DeterministicPipeline:
             if issue:
                 return SubmitResult(outcome="corroborated", issue_id=issue.id, status=issue.status)
 
-        # Otherwise: deterministic routing -> new canonical issue
+        # Otherwise: route -> new canonical issue
+        # Deterministic rules always win — they encode the authoritative Delhi jurisdiction
+        # matrix. AI routing is only the fallback when no rule matches.
+        from app.schemas.routing import RoutingResult
         routing = self.s.routing.route(RoutingInput(
             local_body_type=geo.local_body_type,
             issue_type_slug=analysis.issue_type,
@@ -75,5 +84,13 @@ class DeterministicPipeline:
             drain_type=analysis.drain_type,
             land_owner_hint=analysis.land_owner_hint,
         ))
+        if not routing.primary_authority_slug and analysis.primary_authority_slug:
+            # No rule matched — fall back to AI suggestion
+            routing = RoutingResult(
+                primary_authority_slug=analysis.primary_authority_slug,
+                secondary_authority_slug=analysis.secondary_authority_slug,
+                confidence=analysis.routing_confidence or 0.5,
+                reason=analysis.routing_reason or {},
+            )
         issue = await self.s.issues.create_from_report(report, analysis, geo, routing)
         return SubmitResult(outcome="created", issue_id=issue.id, status=issue.status)

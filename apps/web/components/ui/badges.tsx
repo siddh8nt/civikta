@@ -1,4 +1,5 @@
 import type { IssueStatus, Severity } from "@/lib/types";
+import { statusLabel, severityLabel } from "@/lib/labels";
 
 const STATUS_STYLES: Record<string, string> = {
   submitted: "bg-slate-100 text-slate-700",
@@ -27,12 +28,11 @@ function chip(text: string, cls: string) {
 }
 
 export function StatusBadge({ status }: { status: IssueStatus | string }) {
-  const label = String(status).replace(/_/g, " ");
-  return chip(label, STATUS_STYLES[status] || "bg-slate-100 text-slate-700");
+  return chip(statusLabel(status), STATUS_STYLES[status] || "bg-slate-100 text-slate-700");
 }
 
 export function SeverityBadge({ severity }: { severity: Severity }) {
-  return chip(severity, SEVERITY_STYLES[severity] || SEVERITY_STYLES.medium);
+  return chip(severityLabel(severity), SEVERITY_STYLES[severity] || SEVERITY_STYLES.medium);
 }
 
 export function VerifiedBadge({ count }: { count: number }) {

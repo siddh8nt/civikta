@@ -52,6 +52,33 @@ class EventType(str, Enum):
     issue_merged = "issue_merged"
     urgency_score_updated = "urgency_score_updated"
     still_unresolved_confirmed = "still_unresolved_confirmed"
+    # authority / field actions
+    authority_acknowledged = "authority_acknowledged"
+    authority_rejected = "authority_rejected"
+    field_visit_scheduled = "field_visit_scheduled"
+    field_visit_completed = "field_visit_completed"
+    repair_scheduled = "repair_scheduled"
+    routed = "routed"
+    rerouted = "rerouted"
+    manual_review_triggered = "manual_review_triggered"
+    joint_inspection_done = "joint_inspection_done"
+    resolution_confirmed = "resolution_confirmed"
+    verification_requested = "verification_requested"
+    # deadline + escalation
+    deadline_set = "deadline_set"
+    deadline_breached = "deadline_breached"
+    in_progress_update = "in_progress_update"
+    escalated_to_oversight = "escalated_to_oversight"
+    false_resolution_escalated = "false_resolution_escalated"
+    # utility / specialized
+    tanker_deployed = "tanker_deployed"
+    pump_engineer_dispatched = "pump_engineer_dispatched"
+    sample_collected = "sample_collected"
+    cctv_inspection_done = "cctv_inspection_done"
+    notice_issued = "notice_issued"
+    djb_rejection = "djb_rejection"
+    delhi_police_informed = "delhi_police_informed"
+    diplomatic_note_raised = "diplomatic_note_raised"
 
 
 class GeoPoint(BaseModel):

@@ -16,6 +16,8 @@ class ReportDraftCreate(BaseModel):
     latitude: float
     longitude: float
     media_urls: list[str] = Field(default_factory=list)
+    image_data: list[str] = Field(default_factory=list)  # base64 data-URLs from citizen camera
+    audio_data: str | None = None                        # base64 data-URL of voice recording
 
 
 class MediaAttach(BaseModel):

@@ -15,7 +15,7 @@ export default function HotspotsPage() {
     <main className="dashboard-shell">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-xl font-bold text-brand">Hotspots</h1>
-        <Link href="/oversight/dashboard" className="text-sm text-slate-500">← Cockpit</Link>
+        <Link href="/oversight/dashboard" className="text-sm text-slate-500">← Dashboard</Link>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200">

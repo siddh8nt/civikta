@@ -14,6 +14,8 @@ export interface IssueSummary {
   status: IssueStatus;
   latitude: number | null;
   longitude: number | null;
+  local_body_type: string | null;
+  mcd_zone: string | null;
   ward_no: number | null;
   ward_name: string | null;
   locality_name: string | null;
@@ -38,6 +40,7 @@ export interface TimelineEvent {
 }
 
 export interface IssueDetail extends IssueSummary {
+  reporter_id: string | null;
   updated_at: string;
   canonical_description: string | null;
   routing_confidence: number | null;
@@ -45,6 +48,7 @@ export interface IssueDetail extends IssueSummary {
   ai_summary: string | null;
   ai_confidence: number | null;
   last_corroborated_at: string | null;
+  status_reason: string | null;
   media_urls: string[];
   timeline: TimelineEvent[];
 }
@@ -59,6 +63,9 @@ export interface ComplaintAnalysis {
   obstruction_flag: boolean;
   health_hazard_flag: boolean;
   public_safety_flag: boolean;
+  road_class: string | null;
+  drain_type: string | null;
+  land_owner_hint: string | null;
   confidence: number;
   needs_manual_review: boolean;
 }

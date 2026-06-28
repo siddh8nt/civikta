@@ -18,6 +18,7 @@ class IssueBase(BaseModel):
     longitude: float | None = None
 
     local_body_type: str | None = None
+    mcd_zone: str | None = None
     ward_no: int | None = None
     ward_name: str | None = None
     locality_name: str | None = None
@@ -53,6 +54,7 @@ class TimelineEvent(BaseModel):
 
 class IssueDetail(IssueBase):
     id: str
+    reporter_id: str | None = None
     created_at: datetime
     updated_at: datetime
     canonical_description: str | None = None
@@ -69,3 +71,12 @@ class StatusUpdate(BaseModel):
     status: IssueStatus
     status_reason: str | None = None
     proof_media_urls: list[str] = Field(default_factory=list)
+    # deadline — ISO-8601 string, stored as timeline event
+    deadline_iso: str | None = None
+    # in-progress update fields
+    update_title: str | None = None
+    update_description: str | None = None
+    # base64 proof photo for resolved / in-progress updates
+    proof_image_data: str | None = None
+    # re-routing field — updates primary_authority_slug when transferring to another authority
+    reroute_to_authority: str | None = None

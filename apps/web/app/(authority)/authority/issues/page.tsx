@@ -5,8 +5,12 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import type { IssueSummary } from "@/lib/types";
 import { SeverityBadge, StatusBadge } from "@/components/ui/badges";
+import { authorityLabel } from "@/lib/authorities";
+import { IssueSearchBar } from "@/components/IssueSearchBar";
+import { AuthorityBanner } from "@/components/AuthorityBanner";
 
-const AUTHORITIES = ["", "djb", "pwd", "mcd_sanitation", "mcd_engineering", "ifcd"];
+const AUTHORITIES = ["", "djb", "pwd", "mcd_sanitation", "mcd_engineering", "mcd_public_health",
+  "mcd_horticulture", "ndmc_civil", "ndmc_sanitation", "ifcd", "dda", "delhi_police", "nhai", "dcb_civic"];
 
 export default function AuthorityQueuePage() {
   const [issues, setIssues] = useState<IssueSummary[]>([]);
@@ -24,9 +28,14 @@ export default function AuthorityQueuePage() {
   }, [authority, sort]);
 
   return (
+    <>
+    <AuthorityBanner />
     <main className="dashboard-shell">
-      <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-brand">Authority Issue Queue</h1>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-bold text-brand">Authority Issue Queue</h1>
+          <p className="text-xs text-slate-400">Search or filter assigned issues</p>
+        </div>
         <Link href="/authority/dashboard" className="text-sm text-slate-500">
           ← Dashboard
         </Link>
@@ -40,7 +49,7 @@ export default function AuthorityQueuePage() {
         >
           {AUTHORITIES.map((a) => (
             <option key={a} value={a}>
-              {a === "" ? "All authorities" : a}
+              {a === "" ? "All authorities" : authorityLabel(a)}
             </option>
           ))}
         </select>
@@ -80,7 +89,7 @@ export default function AuthorityQueuePage() {
                     </Link>
                   </td>
                   <td className="p-3 text-slate-500">{i.locality_name}</td>
-                  <td className="p-3 text-slate-500">{i.primary_authority_slug}</td>
+                  <td className="p-3 text-slate-500">{authorityLabel(i.primary_authority_slug)}</td>
                   <td className="p-3"><StatusBadge status={i.status} /></td>
                   <td className="p-3"><SeverityBadge severity={i.severity} /></td>
                   <td className="p-3 text-right">{i.corroboration_count}</td>
@@ -99,5 +108,6 @@ export default function AuthorityQueuePage() {
         </div>
       )}
     </main>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { IssueSummary } from "@/lib/types";
 import { SeverityBadge, StatusBadge, VerifiedBadge } from "./ui/badges";
+import { authorityLabel } from "@/lib/authorities";
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -31,9 +32,8 @@ export function IssueCard({ issue, href }: { issue: IssueSummary; href?: string 
           {" · "}
           {timeAgo(issue.created_at)}
         </p>
-        <div className="flex items-center justify-between text-xs text-slate-500">
-          <span>{issue.primary_authority_slug ?? "routing…"}</span>
-          <span title="urgency score">🔥 {issue.urgency_score.toFixed(1)}</span>
+        <div className="text-xs text-slate-500">
+          <span>{issue.primary_authority_slug ? authorityLabel(issue.primary_authority_slug) : "routing…"}</span>
         </div>
       </div>
     </Link>

@@ -103,5 +103,9 @@ class StubLLMClient:
             i += 1
         return out[:EMBEDDING_DIM]
 
+    async def validate_images(self, image_data: list[str]) -> dict:
+        return {"valid": True, "civic_issue_detected": True, "confidence": 0.8,
+                "issue_hint": "Stub: assumed valid civic issue", "rejection_reason": "none"}
+
     async def summarize(self, prompt: str) -> str:
         return f"[stub-summary] {prompt[:200]}"
