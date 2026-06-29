@@ -1,56 +1,105 @@
 # CIVIKTA
+### Every civic issue. Right authority. Full transparency.
 
-Delhi Civic Issue Transparency & Routing Platform.
+AI-powered civic grievance routing across Delhi's 9 authorities and 272 wards using Google Gemini 2.5 Flash.
 
-See [`../CIVIKTA_PRD_UNIFIED.md`](../CIVIKTA_PRD_UNIFIED.md) for the full product + technical spec.
+**Live:** [civikta-web-67594358509.us-central1.run.app](https://civikta-web-67594358509.us-central1.run.app)  
+**API:** [civikta-api-67594358509.us-central1.run.app/docs](https://civikta-api-67594358509.us-central1.run.app/docs)  
+**Built for:** Vibe2Ship Hackathon 2026 — PS2: Community Hero
+
+---
+
+## What it does
+
+Citizens in Delhi report a civic issue (pothole, sewage overflow, broken streetlight, encroachment, etc.) by uploading photos and pinning a location. Gemini AI analyses the report, classifies its severity, and routes it to the exact government authority responsible for that location — MCD, NDMC, DJB, PWD, IFCD, DDA, Delhi Police, or NHAI.
+
+Authority officers see a live, urgency-scored queue and update issue status. Citizens can track progress, corroborate existing reports, and escalate if deadlines are breached. Oversight officers get city-wide analytics and proactive AI anomaly alerts.
+
+---
+
+## Key features
+
+**Citizen flow**
+- Photo quality validation via Gemini Vision before submission
+- GPS-to-ward resolution across all 272 Delhi wards and MCD zones
+- AI triage: issue type classification, severity scoring, authority routing
+- Duplicate detection — corroborate existing reports instead of filing noise
+- Real-time status tracking and SLA-breach escalation
+
+**Authority portals**
+- Separate dashboards for MCD (12 zones), NDMC, DCB, DJB, PWD, IFCD, DDA, Delhi Police, NHAI
+- Issues sorted by urgency score (severity × corroboration × deadline proximity)
+- Status updates: submitted → in_progress → resolved / rejected
+- Escalation queue for SLA breaches and citizen disputes
+
+**Oversight dashboard**
+- City-wide issue stats and SLA compliance by authority
+- Geographic hotspot clustering
+- Proactive anomaly alerts powered by Gemini
+
+**AI analytics**
+- Natural-language chatbot for oversight officers
+- Ask plain-English questions; Gemini function-calls the live database and synthesises answers
+
+---
+
+## Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 14 (standalone, App Router) |
+| Backend | FastAPI + Python 3.12 |
+| AI | Google Gemini 2.5 Flash (vision, triage, analytics, anomaly detection) |
+| Database | Supabase Postgres + PostGIS (geospatial jurisdiction queries) |
+| Deployment | Google Cloud Run (both frontend and backend) |
+| Maps | Google Maps Platform |
+
+---
 
 ## Monorepo layout
 
 ```
 civikta/
   apps/
-    web/              Next.js frontend (citizen app + authority + oversight dashboards)
+    web/              Next.js frontend (citizen + authority + oversight)
   services/
-    api/              FastAPI backend (intake, geo, routing, duplicate detection, feed)
+    api/              FastAPI backend (18 endpoints across 8 route groups)
   packages/
-    shared-types/     TS types mirroring the backend contracts
+    shared-types/     TypeScript types mirroring backend contracts
   infra/
-    sql/              Postgres schema + seeds (PostGIS + pgvector)
-    docs/             Routing rules + authority master reference
+    sql/              Postgres schema, seeds, PostGIS + routing rules
 ```
 
-## The big idea: it runs today, the real services slot in later
+---
 
-The backend is built around **four config-driven seams**. Each one ships with a
-zero-dependency default so the whole app runs end-to-end with **no API keys and no
-database**. When you're ready, you write one new file and flip one env flag — no
-caller code changes.
+## API overview
 
-| Seam | Default (now) | Production (later) | Flip with |
-|------|---------------|--------------------|-----------|
-| **Pipeline** (orchestration) | `DeterministicPipeline` — calls services in a fixed order | `AgenticPipeline` — Gemini + ADK tool loop | `CIVIKTA_PIPELINE` |
-| **LLM** (model provider) | `StubLLMClient` — offline keyword heuristics | `GeminiClient` — Gemini via AI Studio key | `CIVIKTA_LLM` |
-| **Repository** (data) | `MemoryRepository` — in-process dict store | `SupabaseRepository` — Postgres + PostGIS | `CIVIKTA_REPO` |
-| **Auth** | `StubAuth` — trusts a demo header | `FirebaseAuth` — verifies Firebase ID tokens | `CIVIKTA_AUTH` |
+18 endpoints across 8 groups. Full interactive docs at `/docs`.
 
-> The future **agentic orchestration layer** is just a new `ComplaintPipeline`
-> implementation. The deterministic services (`geo`, `routing`, `duplicate
-> detection`, `urgency`) are already exposed as agent-ready **tools** in
-> `app/agents/tools.py`. Building the agent = wiring those existing tools into an
-> ADK loop. Nothing downstream has to change.
+| Group | Endpoints | Description |
+|---|---|---|
+| `reports` | 7 | Submission pipeline: validate → draft → media → AI analyze → dedup → submit |
+| `authority` | 4 | Prioritised queue, issue detail, status updates, escalations |
+| `issues` | 3 | Public issue detail, corroboration, escalation requests |
+| `feed` | 2 | Nearby issues feed, map viewport |
+| `geo` | 1 | GPS → ward + authority + MCD zone resolution |
+| `analytics` | 1 | Gemini natural-language analytics chatbot |
+| `oversight` | 3 | City stats, hotspots, AI anomaly alerts |
+| `users` | 3 | Sign-in, profile upsert, profile fetch |
 
-## Quick start
+---
+
+## Local development
 
 ### Backend
 ```bash
 cd services/api
 python -m venv .venv
-# Windows: .venv\Scripts\activate   |  macOS/Linux: source .venv/bin/activate
+# Windows: .venv\Scripts\activate  |  macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 uvicorn app.main:app --reload
-# -> http://localhost:8000/docs  (interactive API, works with zero external services)
+# -> http://localhost:8000/docs
 ```
-> Python 3.12 recommended. Newer versions may lack prebuilt wheels for some deps.
 
 ### Frontend
 ```bash
@@ -60,5 +109,15 @@ npm run dev
 # -> http://localhost:3000
 ```
 
-Copy `.env.example` files to `.env` / `.env.local` and fill in only what you need —
-the defaults run without any of it.
+Copy `.env.example` to `.env` / `.env.local` and fill in your keys. The backend runs with stub defaults (no external services needed) if keys are omitted.
+
+---
+
+## Deployment
+
+Both services are containerised and deployed to Google Cloud Run via `deploy.ps1`.
+
+```powershell
+cd civikta
+.\deploy.ps1
+```

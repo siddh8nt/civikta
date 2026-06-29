@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CIVIKTA API Docs</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f8f8f7;color:#1a1a18;line-height:1.5}
+.page{max-width:860px;margin:0 auto;padding:2rem 1.5rem}
+.hero{background:#fff;border:1px solid #e5e5e3;border-radius:12px;padding:2rem;margin-bottom:2rem}
+.hero-top{display:flex;align-items:center;gap:1rem;margin-bottom:1rem;flex-wrap:wrap}
+.logo{width:44px;height:44px;border-radius:50%;background:#e6f1fb;display:flex;align-items:center;justify-content:center;font-weight:500;font-size:13px;color:#185fa5;flex-shrink:0}
+.hero h1{font-size:22px;font-weight:500;color:#1a1a18}
+.hero-sub{font-size:13px;color:#888;margin-top:2px}
+.badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:1rem}
+.badge{font-size:11px;padding:3px 10px;border-radius:6px;font-weight:500}
+.badge-blue{background:#e6f1fb;color:#185fa5}
+.badge-green{background:#eaf3de;color:#3b6d11}
+.badge-purple{background:#eeedfe;color:#534ab7}
+.badge-warn{background:#faeeda;color:#854f0b}
+.desc{font-size:14px;color:#555;line-height:1.6;margin-top:1rem}
+.links{display:flex;gap:12px;margin-top:1.25rem;flex-wrap:wrap}
+.link-btn{display:inline-flex;align-items:center;gap:6px;font-size:13px;padding:6px 14px;border-radius:6px;border:1px solid #ddd;color:#1a1a18;text-decoration:none;background:#f8f8f7}
+.link-btn:hover{background:#efefed}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:2rem}
+.stat{background:#fff;border:1px solid #e5e5e3;border-radius:8px;padding:1rem;text-align:center}
+.stat-num{font-size:24px;font-weight:500;color:#1a1a18}
+.stat-label{font-size:12px;color:#888;margin-top:2px}
+.section-title{font-size:13px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:.06em;margin:2rem 0 1rem}
+.group{margin-bottom:2rem}
+.group-header{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8f8f7;border:1px solid #e5e5e3;border-radius:12px 12px 0 0;flex-wrap:wrap}
+.group-tag{font-size:11px;font-weight:500;padding:2px 8px;border-radius:6px}
+.group-name{font-size:14px;font-weight:500;color:#1a1a18}
+.group-desc{font-size:12px;color:#888;margin-left:auto}
+.endpoints{border:1px solid #e5e5e3;border-top:none;border-radius:0 0 12px 12px;overflow:hidden;background:#fff}
+.ep{display:grid;grid-template-columns:64px 1fr;gap:0;border-top:1px solid #f0f0ee;padding:10px 14px;align-items:start}
+.ep:first-child{border-top:none}
+.ep:hover{background:#fafaf9}
+.method{font-size:11px;font-weight:500;padding:2px 6px;border-radius:4px;text-align:center;margin-top:2px;font-family:monospace}
+.m-get{background:#e6f1fb;color:#185fa5}
+.m-post{background:#eaf3de;color:#3b6d11}
+.ep-right{display:flex;flex-direction:column;gap:3px}
+.ep-path{font-size:13px;font-family:monospace;color:#1a1a18}
+.ep-summary{font-size:12px;color:#555;line-height:1.4}
+.ep-doc{font-size:12px;color:#888;line-height:1.5;margin-top:4px;padding-top:4px;border-top:1px solid #f0f0ee}
+.ai-chip{display:inline-flex;align-items:center;gap:4px;font-size:10px;padding:1px 7px;border-radius:10px;background:#eeedfe;color:#534ab7;margin-left:6px;vertical-align:middle}
+.live-link{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#185fa5;text-decoration:none;margin-left:auto}
+.flow-box{background:#fff;border:1px solid #e5e5e3;border-radius:12px;padding:1.25rem;margin-bottom:2rem;font-size:13px;color:#555;line-height:1.8}
+.flow-box strong{color:#1a1a18}
+code{font-family:monospace;font-size:12px;background:#f0f0ee;padding:1px 5px;border-radius:4px}
+footer{text-align:center;padding:1.5rem 0;font-size:12px;color:#888;border-top:1px solid #e5e5e3;margin-top:1rem}
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hero">
+  <div class="hero-top">
+    <div class="logo">CV</div>
+    <div>
+      <h1>CIVIKTA API <span style="font-size:13px;color:#888;font-weight:400">v1.0.0</span></h1>
+      <div class="hero-sub">Delhi Civic Issue Transparency &amp; Routing Platform</div>
+    </div>
+    <a class="live-link" href="https://civikta-api-67594358509.us-central1.run.app/docs" style="margin-left:auto;font-size:13px"><i class="ti ti-external-link"></i> Live Swagger UI</a>
+  </div>
+  <p class="desc">AI-powered platform that lets Delhi citizens report civic problems and automatically routes them to the correct government authority using <strong>Google Gemini 2.5 Flash</strong>. Backend on <strong>Cloud Run</strong>, database on <strong>Supabase Postgres + PostGIS</strong>.</p>
+  <div class="badges">
+    <span class="badge badge-blue"><i class="ti ti-robot"></i> Gemini 2.5 Flash</span>
+    <span class="badge badge-green">Cloud Run &middot; GCP</span>
+    <span class="badge badge-purple">Supabase Postgres + PostGIS</span>
+    <span class="badge badge-warn">Vibe2Ship 2026 &middot; PS2 Community Hero</span>
+  </div>
+  <div class="links">
+    <a class="link-btn" href="https://civikta-web-67594358509.us-central1.run.app"><i class="ti ti-device-desktop"></i> Live app</a>
+    <a class="link-btn" href="https://civikta-api-67594358509.us-central1.run.app/docs"><i class="ti ti-book"></i> Swagger UI</a>
+    <a class="link-btn" href="https://github.com/siddh8nt/civikta"><i class="ti ti-brand-github"></i> GitHub</a>
+    <a class="link-btn" href="https://civikta-api-67594358509.us-central1.run.app/api/config"><i class="ti ti-settings"></i> Runtime config</a>
+  </div>
+</div>
+
+<div class="stats">
+  <div class="stat"><div class="stat-num">9</div><div class="stat-label">Authorities routed</div></div>
+  <div class="stat"><div class="stat-num">272</div><div class="stat-label">Delhi wards covered</div></div>
+  <div class="stat"><div class="stat-num">18</div><div class="stat-label">API endpoints</div></div>
+  <div class="stat"><div class="stat-num">AI</div><div class="stat-label">Gemini at every step</div></div>
+</div>
+
+<div class="section-title">How it works</div>
+<div class="flow-box">
+  <strong>1. Citizen pins location</strong> &rarr; <code>/api/geo/resolve</code> maps GPS to ward + authority slug<br>
+  <strong>2. Photos validated</strong> &rarr; <code>/api/reports/validate-images</code> runs Gemini Vision quality check<br>
+  <strong>3. AI triage</strong> &rarr; <code>/api/reports/{id}/analyze</code> classifies type, severity, and routes to authority<br>
+  <strong>4. Duplicate check</strong> &rarr; <code>/api/reports/{id}/check-duplicate</code> prevents noise, encourages corroboration<br>
+  <strong>5. Submit</strong> &rarr; <code>/api/reports/{id}/submit</code> creates live issue with SLA deadline<br>
+  <strong>6. Authority acts</strong> &rarr; <code>/api/authority/issues</code> shows urgency-scored queue; status updated via <code>/status</code>
+</div>
+
+<div class="section-title">Endpoints</div>
+
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag badge-green">reports</span>
+    <span class="group-name">Citizen submission pipeline</span>
+    <span class="group-desc">validate &rarr; draft &rarr; media &rarr; AI analyze &rarr; dedup &rarr; submit</span>
+  </div>
+  <div class="endpoints">
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/reports/validate-images</span><span class="ep-summary">Gemini Vision quality check on uploaded photos before draft creation<span class="ai-chip"><i class="ti ti-sparkles"></i> Gemini</span></span></div></div>
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/reports/draft</span><span class="ep-summary">Create a new issue draft with location and description</span></div></div>
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/reports/{id}/media</span><span class="ep-summary">Attach photo or video evidence to the draft</span></div></div>
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/reports/{id}/analyze</span><span class="ep-summary">Core AI step &mdash; classify type, assign severity, determine authority routing<span class="ai-chip"><i class="ti ti-sparkles"></i> Gemini</span></span><div class="ep-doc">Returns: issue_type, severity (low/medium/high/critical), authority slug, urgency score, structured metadata</div></div></div>
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/reports/{id}/check-duplicate</span><span class="ep-summary">Find semantically similar nearby issues &mdash; offer corroboration instead of duplicate filing<span class="ai-chip"><i class="ti ti-sparkles"></i> Gemini</span></span></div></div>
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/reports/{id}/submit</span><span class="ep-summary">Finalise and route &mdash; creates live issue with SLA deadline, visible in authority queue</span></div></div>
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/reports/mine</span><span class="ep-summary">All issues filed by the current citizen</span></div></div>
+  </div>
+</div>
+
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag badge-blue">authority</span>
+    <span class="group-name">Authority dashboard &amp; queue</span>
+    <span class="group-desc">MCD &middot; NDMC &middot; DCB &middot; DJB &middot; PWD &middot; IFCD &middot; DDA &middot; Police &middot; NHAI</span>
+  </div>
+  <div class="endpoints">
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/authority/issues</span><span class="ep-summary">Prioritised issue queue &mdash; filter by authority, severity, status; sort by urgency score</span><div class="ep-doc">Urgency score = severity weight &times; corroboration count &times; SLA deadline proximity. Try: ?authority=mcd&amp;sort=urgency</div></div></div>
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/authority/issues/{id}</span><span class="ep-summary">Full issue detail for an authority officer including AI analysis and media</span></div></div>
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/authority/issues/{id}/status</span><span class="ep-summary">Update status: submitted &rarr; in_progress &rarr; resolved / rejected</span></div></div>
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/authority/escalations</span><span class="ep-summary">Issues that breached SLA deadline or were disputed by citizens as falsely resolved</span></div></div>
+  </div>
+</div>
+
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag badge-blue">issues</span>
+    <span class="group-name">Public issue detail &amp; citizen actions</span>
+    <span class="group-desc">view &middot; corroborate &middot; escalate</span>
+  </div>
+  <div class="endpoints">
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/issues/{id}</span><span class="ep-summary">Full issue detail &mdash; AI analysis, media, ward/zone routing metadata, status history</span></div></div>
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/issues/{id}/corroborate</span><span class="ep-summary">"I'm affected too" / add evidence / dispute false resolution &mdash; raises urgency score</span><div class="ep-doc">Types: affected &middot; still_unresolved (triggers re-open + escalation) &middot; evidence</div></div></div>
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/issues/{id}/request-escalation</span><span class="ep-summary">Citizen requests escalation when SLA is breached or authority is unresponsive</span></div></div>
+  </div>
+</div>
+
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag badge-green">feed</span>
+    <span class="group-name">Citizen feed &amp; map</span>
+    <span class="group-desc">nearby issues &middot; map viewport</span>
+  </div>
+  <div class="endpoints">
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/feed/nearby</span><span class="ep-summary">Active issues within radius of a GPS point &mdash; powers the home screen neighbourhood feed</span><div class="ep-doc">Params: lat, lng, radius (metres, default 3000), issue_type</div></div></div>
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/map/issues</span><span class="ep-summary">All issues in a map bounding box &mdash; called on every pan/zoom of the Google Maps view</span></div></div>
+  </div>
+</div>
+
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag badge-purple">geo</span>
+    <span class="group-name">Jurisdiction resolution</span>
+    <span class="group-desc">GPS &rarr; ward + authority + zone</span>
+  </div>
+  <div class="endpoints">
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/geo/resolve</span><span class="ep-summary">Core routing engine &mdash; lat/lng &rarr; ward, local body type (MCD/NDMC/DCB), MCD zone, locality</span><div class="ep-doc">Try: lat=28.6139&amp;lng=77.2090 (Connaught Place &rarr; NDMC) &middot; lat=28.5355&amp;lng=77.2910 (Lajpat Nagar &rarr; MCD South)</div></div></div>
+  </div>
+</div>
+
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag badge-purple">analytics</span>
+    <span class="group-name">AI analytics chatbot</span>
+    <span class="group-desc">natural language &rarr; live DB queries via Gemini</span>
+  </div>
+  <div class="endpoints">
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/analytics/query</span><span class="ep-summary">Ask a plain-English question &mdash; Gemini function-calls the live DB and synthesises the answer<span class="ai-chip"><i class="ti ti-sparkles"></i> Gemini</span></span><div class="ep-doc">e.g. "Which ward has the most unresolved potholes?" &middot; "DJB SLA breach rate last 7 days?" &middot; Supports multi-turn via history[]</div></div></div>
+  </div>
+</div>
+
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag badge-warn">oversight</span>
+    <span class="group-name">City-level oversight dashboard</span>
+    <span class="group-desc">stats &middot; hotspots &middot; AI anomaly alerts</span>
+  </div>
+  <div class="endpoints">
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/oversight/summary</span><span class="ep-summary">Aggregate stats &mdash; total/open/resolved/escalated, by authority and severity, SLA compliance rate</span></div></div>
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/oversight/hotspots</span><span class="ep-summary">Geographic issue clusters &mdash; centre coordinates, count, dominant type, affected ward</span></div></div>
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/oversight/alerts</span><span class="ep-summary">Proactive AI anomaly detection &mdash; spikes, SLA pattern failures, repeat-location issues<span class="ai-chip"><i class="ti ti-sparkles"></i> Gemini</span></span></div></div>
+  </div>
+</div>
+
+<div class="group">
+  <div class="group-header">
+    <span class="group-tag" style="background:#f0f0ee;color:#888;border:1px solid #ddd">users</span>
+    <span class="group-name">Identity &amp; onboarding</span>
+    <span class="group-desc">sign-in &middot; profile &middot; ward setup</span>
+  </div>
+  <div class="endpoints">
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/users/signin</span><span class="ep-summary">Citizen sign-in by phone number</span></div></div>
+    <div class="ep"><span class="method m-post">POST</span><div class="ep-right"><span class="ep-path">/api/users/me</span><span class="ep-summary">Create or update profile &mdash; name, phone, ward, home location</span></div></div>
+    <div class="ep"><span class="method m-get">GET</span><div class="ep-right"><span class="ep-path">/api/users/me</span><span class="ep-summary">Fetch current citizen profile</span></div></div>
+  </div>
+</div>
+
+<footer>NCT Delhi &middot; Civikta Central Routing Engine &middot; Built with Google Gemini + Cloud Run + Supabase</footer>
+</div>
+</body>
+</html>
