@@ -113,11 +113,4 @@ Copy `.env.example` to `.env` / `.env.local` and fill in your keys. The backend 
 
 ---
 
-## Deployment
 
-Both services are containerised and deployed to Google Cloud Run via `deploy.ps1`.
-
-```powershell
-cd civikta
-.\deploy.ps1
-```
