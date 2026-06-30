@@ -25,6 +25,14 @@ from app.models.issue_report import IssueMediaRecord, IssueReportRecord
 from app.models.routing_rule import RoutingRuleRecord
 
 
+def _looks_like_uuid(value: str) -> bool:
+    try:
+        uuid.UUID(value)
+        return True
+    except (ValueError, AttributeError):
+        return False
+
+
 def _clean(d: dict) -> dict:
     """Remove fields that must not be sent to the DB (in-memory-only / too large)."""
     d.pop("image_data", None)
@@ -58,11 +66,28 @@ class SupabaseRepository:
         return issue
 
     def get_issue(self, issue_id: str) -> IssueRecord | None:
-        res = self._client.table("issues").select("*").eq("id", issue_id).maybe_single().execute()
-        if res.data:
-            return IssueRecord(**res.data)
-        # Prefix/short-code lookup (CIV-XXXXXXXX → first 8 chars)
-        res2 = self._client.table("issues").select("*").ilike("id", f"{issue_id}%").limit(1).execute()
+        # The `id` column is a UUID type — an exact-match query on a
+        # non-UUID string (e.g. the CIV-XXXXXXXX short code) makes Postgres
+        # raise a syntax error rather than just returning no rows, so that
+        # attempt must be skipped (not just caught after the fact) whenever
+        # the input isn't a well-formed UUID.
+        if _looks_like_uuid(issue_id):
+            res = self._client.table("issues").select("*").eq("id", issue_id).maybe_single().execute()
+            if res.data:
+                return IssueRecord(**res.data)
+            return None
+
+        # Prefix/short-code lookup (CIV-XXXXXXXX → first 8 hex chars of the
+        # UUID). PostgREST can't ILIKE-pattern-match a uuid column without a
+        # cast, and casts aren't supported through this client's filter
+        # methods — so bound it as a native UUID range instead, which
+        # Postgres compares natively with no casting needed.
+        prefix = issue_id.lower()
+        if len(prefix) != 8 or not all(c in "0123456789abcdef" for c in prefix):
+            return None
+        lo = f"{prefix}-0000-0000-0000-000000000000"
+        hi = f"{prefix}-ffff-ffff-ffff-ffffffffffff"
+        res2 = self._client.table("issues").select("*").gte("id", lo).lte("id", hi).limit(1).execute()
         return IssueRecord(**res2.data[0]) if res2.data else None
 
     def update_issue(self, issue: IssueRecord) -> IssueRecord:
@@ -77,6 +102,7 @@ class SupabaseRepository:
         *,
         statuses: list[str] | None = None,
         primary_authority_slug: str | None = None,
+        primary_authority_slugs: list[str] | None = None,
         ward_no: int | None = None,
         issue_type_slug: str | None = None,
     ) -> list[IssueRecord]:
@@ -85,6 +111,8 @@ class SupabaseRepository:
             q = q.in_("status", statuses)
         if primary_authority_slug:
             q = q.eq("primary_authority_slug", primary_authority_slug)
+        if primary_authority_slugs:
+            q = q.in_("primary_authority_slug", primary_authority_slugs)
         if ward_no is not None:
             q = q.eq("ward_no", ward_no)
         if issue_type_slug:

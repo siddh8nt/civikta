@@ -7,6 +7,7 @@ import type { IssueDetail } from "@/lib/types";
 import { SeverityBadge, StatusBadge } from "@/components/ui/badges";
 import { authorityLabel } from "@/lib/authorities";
 import { eventLabel } from "@/lib/labels";
+import { OversightBanner } from "@/components/OversightBanner";
 
 export default function OversightIssueDetailPage({ params }: { params: { id: string } }) {
   const [issue, setIssue] = useState<IssueDetail | null>(null);
@@ -16,8 +17,8 @@ export default function OversightIssueDetailPage({ params }: { params: { id: str
     api.issue(params.id).then(setIssue).catch(() => setErr(true));
   }, [params.id]);
 
-  if (err) return <main className="dashboard-shell text-sm text-rose-500">Issue not found.</main>;
-  if (!issue) return <main className="dashboard-shell text-sm text-slate-400">Loading…</main>;
+  if (err) return <><OversightBanner /><main className="dashboard-shell pt-6 text-sm text-rose-500">Issue not found.</main></>;
+  if (!issue) return <><OversightBanner /><main className="dashboard-shell pt-6 text-sm text-slate-400">Loading…</main></>;
 
   const isEscalated = issue.status === "reopened";
   const filedDaysAgo = Math.floor(
@@ -25,12 +26,22 @@ export default function OversightIssueDetailPage({ params }: { params: { id: str
   );
 
   return (
-    <main className="dashboard-shell">
+    <>
+    <OversightBanner />
+    <main className="dashboard-shell pt-6">
       <div className="mb-4 flex items-center gap-3">
-        <Link href="/oversight/issues" className="text-sm text-slate-500">← All issues</Link>
+        <Link href="/oversight/issues" className="inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700 transition-colors">
+          <svg className="h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          All issues
+        </Link>
         {isEscalated && (
-          <span className="rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
-            ⚠ ESCALATED
+          <span className="flex items-center gap-1 rounded-full bg-rose-100 px-2.5 py-0.5 text-xs font-bold text-rose-700">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376C1.83 17.815 2.91 19.5 4.5 19.5h15c1.59 0 2.67-1.685 1.803-3.374L13.803 5.126c-.795-1.541-2.811-1.541-3.606 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            ESCALATED
           </span>
         )}
       </div>
@@ -102,7 +113,7 @@ export default function OversightIssueDetailPage({ params }: { params: { id: str
                     <span className={`absolute -left-[21px] top-1.5 h-2 w-2 rounded-full ${
                       e.event_type === "reopened" ? "bg-rose-500" :
                       e.event_type === "resolved" ? "bg-green-500" :
-                      e.event_type === "still_unresolved_confirmed" ? "bg-orange-400" :
+                      e.event_type === "still_unresolved_confirmed" ? "bg-amber-400" :
                       "bg-slate-400"
                     }`} />
                     <div className="flex items-center gap-2">
@@ -146,7 +157,7 @@ export default function OversightIssueDetailPage({ params }: { params: { id: str
 
           {isEscalated && (
             <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900 space-y-1">
-              <p className="font-bold text-xs uppercase tracking-wide text-rose-600">Escalation active</p>
+              <p className="font-bold text-xs uppercase tracking-wide text-rose-700">Escalation active</p>
               <p>Citizen disputed the resolution. Authority supervisor has been notified.</p>
               <p className="text-xs text-rose-700 mt-1">
                 Monitor this issue until re-resolved or further action taken.
@@ -161,7 +172,7 @@ export default function OversightIssueDetailPage({ params }: { params: { id: str
             </p>
             <Link
               href="/oversight/analytics"
-              className="mt-3 block w-full rounded-lg bg-violet-600 py-2 text-center text-sm font-semibold text-white hover:bg-violet-700"
+              className="mt-3 block w-full rounded-lg bg-indigo-700 py-2 text-center text-sm font-semibold text-white hover:bg-indigo-800"
             >
               Open analytics chatbot →
             </Link>
@@ -169,6 +180,7 @@ export default function OversightIssueDetailPage({ params }: { params: { id: str
         </aside>
       </div>
     </main>
+    </>
   );
 }
 

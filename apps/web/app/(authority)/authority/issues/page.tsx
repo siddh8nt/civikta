@@ -8,24 +8,39 @@ import { SeverityBadge, StatusBadge } from "@/components/ui/badges";
 import { authorityLabel } from "@/lib/authorities";
 import { IssueSearchBar } from "@/components/IssueSearchBar";
 import { AuthorityBanner } from "@/components/AuthorityBanner";
+import { getAuthorityContext } from "@/lib/authority-context";
 
-const AUTHORITIES = ["", "djb", "pwd", "mcd_sanitation", "mcd_engineering", "mcd_public_health",
-  "mcd_horticulture", "ndmc_civil", "ndmc_sanitation", "ifcd", "dda", "delhi_police", "nhai", "dcb_civic"];
+// Sub-departments within multi-department portals — lets an officer filter
+// within their own portal only, never across into a different authority.
+const PORTAL_DEPARTMENTS: Record<string, string[]> = {
+  mcd: ["mcd_sanitation", "mcd_engineering", "mcd_horticulture", "mcd_public_health"],
+  ndmc: ["ndmc_sanitation", "ndmc_civil", "ndmc_horticulture"],
+};
 
 export default function AuthorityQueuePage() {
+  const [portal, setPortal] = useState<string | null>(null);
+  const [department, setDepartment] = useState(""); // "" = all departments in this portal
   const [issues, setIssues] = useState<IssueSummary[]>([]);
-  const [authority, setAuthority] = useState("");
   const [sort, setSort] = useState("urgency");
   const [loading, setLoading] = useState(true);
 
+  // Queue is always scoped to the portal the officer is logged into —
+  // never a free choice across other authorities' queues.
   useEffect(() => {
+    setPortal(getAuthorityContext()?.authority ?? "");
+  }, []);
+
+  useEffect(() => {
+    if (portal === null) return; // still resolving portal context
     setLoading(true);
     api
-      .authorityQueue({ authority: authority || undefined, sort })
+      .authorityQueue({ authority: department || portal || undefined, sort })
       .then(setIssues)
       .catch(() => setIssues([]))
       .finally(() => setLoading(false));
-  }, [authority, sort]);
+  }, [portal, department, sort]);
+
+  const departments = PORTAL_DEPARTMENTS[portal ?? ""] ?? [];
 
   return (
     <>
@@ -42,17 +57,18 @@ export default function AuthorityQueuePage() {
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
-        <select
-          value={authority}
-          onChange={(e) => setAuthority(e.target.value)}
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-        >
-          {AUTHORITIES.map((a) => (
-            <option key={a} value={a}>
-              {a === "" ? "All authorities" : authorityLabel(a)}
-            </option>
-          ))}
-        </select>
+        {departments.length > 0 && (
+          <select
+            value={department}
+            onChange={(e) => setDepartment(e.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="">All departments</option>
+            {departments.map((d) => (
+              <option key={d} value={d}>{authorityLabel(d)}</option>
+            ))}
+          </select>
+        )}
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value)}

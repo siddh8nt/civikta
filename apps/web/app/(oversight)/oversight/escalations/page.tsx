@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import type { IssueSummary } from "@/lib/types";
 import { SeverityBadge } from "@/components/ui/badges";
 import { authorityLabel } from "@/lib/authorities";
-import { IssueSearchBar } from "@/components/IssueSearchBar";
+import { OversightBanner } from "@/components/OversightBanner";
 
 function timeAgo(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -118,29 +118,23 @@ export default function OversightEscalationsPage() {
   }
 
   return (
-    <main className="dashboard-shell space-y-6">
+    <>
+    <OversightBanner />
+    <main className="dashboard-shell space-y-6 pt-6">
       {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Link href="/oversight/dashboard" className="mb-1 inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors">
-            ← Oversight Dashboard
-          </Link>
-          <h1 className="text-xl font-bold text-slate-800">Citizen Escalations</h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Automated escalations via Vertex AI agent · Issues requiring oversight intervention
-          </p>
-        </div>
-        <div className="w-64">
-          <IssueSearchBar urlPrefix="/oversight/issues" />
-        </div>
+      <div>
+        <h1 className="text-xl font-bold text-slate-800">Citizen Escalations</h1>
+        <p className="text-xs text-slate-400 mt-0.5">
+          Automated escalations via Vertex AI agent · Issues requiring oversight intervention
+        </p>
       </div>
 
       {/* AI Agent notice */}
-      <div className="rounded-xl border border-violet-200 bg-violet-50 p-4 flex items-start gap-3">
-        <div className="shrink-0 mt-0.5 h-8 w-8 rounded-full bg-violet-600 flex items-center justify-center text-white text-xs font-bold">AI</div>
+      <div className="rounded-xl border border-indigo-200 bg-indigo-50 p-4 flex items-start gap-3">
+        <div className="shrink-0 mt-0.5 h-8 w-8 rounded-full bg-indigo-700 flex items-center justify-center text-white text-xs font-bold">AI</div>
         <div>
-          <p className="text-sm font-semibold text-violet-900">Vertex AI Escalation Agent</p>
-          <p className="text-xs text-violet-700 mt-0.5">
+          <p className="text-sm font-semibold text-indigo-950">Vertex AI Escalation Agent</p>
+          <p className="text-xs text-indigo-800 mt-0.5">
             Continuously monitors all active issues. Automatically flags to oversight when an authority has not acted within the set deadline, or a resolved issue is disputed by a significant number of citizens.
           </p>
         </div>
@@ -154,14 +148,14 @@ export default function OversightEscalationsPage() {
             onClick={() => setTab(t)}
             className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition ${
               tab === t
-                ? t === "deadline" ? "bg-rose-600 text-white shadow-sm" : "bg-orange-600 text-white shadow-sm"
+                ? t === "deadline" ? "bg-rose-700 text-white shadow-sm" : "bg-amber-700 text-white shadow-sm"
                 : "text-slate-500 hover:bg-slate-50"
             }`}
           >
             {t === "deadline" ? "Deadline Breaches" : "Disputed Resolutions"}
             {!loading && (
               <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
-                tab === t ? "bg-white/20 text-white" : t === "deadline" ? "bg-rose-100 text-rose-700" : "bg-orange-100 text-orange-700"
+                tab === t ? "bg-white/20 text-white" : t === "deadline" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-800"
               }`}>
                 {t === "deadline" ? deadlineBreaches.length : falseResolved.length}
               </span>
@@ -195,14 +189,14 @@ export default function OversightEscalationsPage() {
               <div
                 key={issue.id}
                 className={`rounded-xl border bg-white p-4 text-sm ${
-                  tab === "deadline" ? "border-rose-200" : "border-orange-200"
+                  tab === "deadline" ? "border-rose-200" : "border-amber-200"
                 }`}
               >
                 <div className="flex items-start justify-between gap-3">
                   <Link href={`/oversight/issues/${issue.id}`} className="min-w-0 flex-1 hover:underline">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
                       <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${
-                        tab === "deadline" ? "bg-rose-100 text-rose-700" : "bg-orange-100 text-orange-700"
+                        tab === "deadline" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-800"
                       }`}>
                         {tab === "deadline" ? "No action taken" : "Disputed resolution"}
                       </span>
@@ -214,7 +208,7 @@ export default function OversightEscalationsPage() {
                       {issue.mcd_zone ? ` · ${issue.mcd_zone} Zone` : ""}
                     </p>
                     {tab === "false_resolved" && (
-                      <p className="text-xs text-orange-600 mt-0.5 font-medium">
+                      <p className="text-xs text-amber-700 mt-0.5 font-medium">
                         {issue.corroboration_count} citizens reported still unresolved
                       </p>
                     )}
@@ -265,7 +259,7 @@ export default function OversightEscalationsPage() {
               {/* Modal header */}
               <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-widest text-rose-600">Official Notice</p>
+                  <p className="text-xs font-bold uppercase tracking-widest text-rose-700">Official Notice</p>
                   <h2 className="text-base font-bold text-slate-900">Report to Jurisdictional Official</h2>
                 </div>
                 <button onClick={() => setNotify(null)} className="text-slate-400 hover:text-slate-600 text-xl leading-none">×</button>
@@ -310,7 +304,7 @@ export default function OversightEscalationsPage() {
                 </button>
                 <button
                   onClick={handleSend}
-                  className="rounded-xl bg-rose-600 px-5 py-2 text-sm font-bold text-white hover:bg-rose-700 transition"
+                  className="rounded-xl bg-rose-700 px-5 py-2 text-sm font-bold text-white hover:bg-rose-800 transition"
                 >
                   Send Notice →
                 </button>
@@ -320,5 +314,6 @@ export default function OversightEscalationsPage() {
         );
       })()}
     </main>
+    </>
   );
 }

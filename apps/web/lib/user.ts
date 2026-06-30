@@ -39,9 +39,15 @@ export function markOnboardingComplete(): void {
   localStorage.setItem("civikta_onboarded", "1");
 }
 
+// Called on sign-out. Clears every piece of per-account local state — not
+// just the onboarding flag — so a different account signing in on the same
+// browser never inherits a stale cached location/profile from this one.
 export function resetOnboarding(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem("civikta_onboarded");
+  localStorage.removeItem("civikta_location");
+  localStorage.removeItem("civikta_profile");
+  localStorage.removeItem("civikta_user_id");
 }
 
 // ── Profile ────────────────────────────────────────────────────────────────

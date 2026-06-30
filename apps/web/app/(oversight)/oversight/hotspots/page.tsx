@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { api } from "@/lib/api";
+import { OversightBanner } from "@/components/OversightBanner";
 
 export default function HotspotsPage() {
   const [hotspots, setHotspots] = useState<Record<string, any>[]>([]);
@@ -12,10 +12,11 @@ export default function HotspotsPage() {
   }, []);
 
   return (
-    <main className="dashboard-shell">
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-xl font-bold text-brand">Hotspots</h1>
-        <Link href="/oversight/dashboard" className="text-sm text-slate-500">← Dashboard</Link>
+    <>
+    <OversightBanner />
+    <main className="dashboard-shell pt-6">
+      <div className="mb-6">
+        <h1 className="text-xl font-bold text-slate-900">Hotspots</h1>
       </div>
 
       <div className="overflow-x-auto rounded-xl border border-slate-200">
@@ -48,5 +49,6 @@ export default function HotspotsPage() {
         </table>
       </div>
     </main>
+    </>
   );
 }

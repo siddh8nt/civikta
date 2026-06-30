@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { saveProfile, markOnboardingComplete, setUserId, getUserLocation, saveUserLocation } from "@/lib/user";
+import { saveProfile, markOnboardingComplete, setUserId, saveUserLocation } from "@/lib/user";
 import { supabase } from "@/lib/supabase";
 import { api } from "@/lib/api";
 
@@ -13,6 +13,29 @@ function toEmail(phone: string) {
 
 export default function SignupPage() {
   const router = useRouter();
+
+  // Fade + rise in on mount so the transition from the onboarding "Get
+  // Started" fade-out reads as one continuous motion instead of a hard cut.
+  const [mounted, setMounted] = useState(false);
+  const [exiting, setExiting] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // Prefetch the destination so the sign-in → my-locality transition has no
+  // on-demand compile/fetch lag, same fix as the onboarding → signup flow.
+  useEffect(() => {
+    router.prefetch("/my-locality");
+  }, [router]);
+
+  // Fade out, then navigate client-side (no full reload) so the transition
+  // into the feed is a smooth cross-fade instead of a hard browser navigation.
+  function goToMyLocality() {
+    setExiting(true);
+    setTimeout(() => router.push("/my-locality"), 150);
+  }
+
   const [mode, setMode] = useState<"signup" | "signin">("signup");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -68,15 +91,10 @@ export default function SignupPage() {
       const uid = data.user?.id;
       if (uid) setUserId(uid);
 
-      // 1. localStorage has location from previous onboarding on this device
-      const saved = getUserLocation();
-      if (saved) {
-        markOnboardingComplete();
-        window.location.href = "/my-locality";
-        return;
-      }
-
-      // 2. No local data - hydrate the signed-in phone account from the backend.
+      // Always hydrate from the backend for the account actually being signed
+      // in — never trust a cached localStorage location, since it's a single
+      // device-wide key, not scoped per-account, and would otherwise leak a
+      // previous account's locality onto this one.
       // /me may point at the current demo/auth identity, so use the phone lookup.
       try {
         const u = await api.signin({ phone: digits, password_hash: password });
@@ -92,7 +110,7 @@ export default function SignupPage() {
             local_body_type: u.local_body_type ?? null,
           });
           markOnboardingComplete();
-          window.location.href = "/my-locality";
+          goToMyLocality();
           return;
         }
       } catch { /* fall through */ }
@@ -102,7 +120,22 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-slate-950 overflow-hidden" style={{ maxWidth: 480, margin: "0 auto" }}>
+    <div
+      className="flex h-dvh flex-col bg-slate-950 overflow-hidden"
+      style={{ maxWidth: 480, margin: "0 auto" }}
+    >
+      {/* Content wrapper carries entrance/exit animation — bg-slate-950 above
+          stays solid throughout so the transition never flashes the page's
+          light body background */}
+      <div
+        className={`flex h-full flex-col ease-out ${
+          exiting
+            ? "transition-all duration-150 opacity-0 -translate-y-2"
+            : mounted
+            ? "transition-all duration-300 opacity-100 translate-y-0"
+            : "transition-all duration-300 opacity-0 translate-y-3"
+        }`}
+      >
       <div className="shrink-0 px-6 pt-6">
         <button onClick={() => router.back()} className="text-slate-500 text-sm">← Back</button>
       </div>
@@ -120,6 +153,30 @@ export default function SignupPage() {
         <p className="mt-1.5 text-sm text-slate-400">
           {mode === "signup" ? "Set up your Civikta identity in seconds." : "Sign in with your phone and password."}
         </p>
+      </div>
+
+      {/* Sign up / sign in toggle */}
+      <div className="shrink-0 px-6 pb-2">
+        <div className="flex gap-1 rounded-2xl border border-slate-800 bg-slate-900 p-1">
+          <button
+            type="button"
+            onClick={() => { if (mode !== "signup") { setMode("signup"); setServerError(null); setErrors({}); } }}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors duration-200 ${
+              mode === "signup" ? "bg-emerald-500 text-white" : "text-slate-400"
+            }`}
+          >
+            Sign Up
+          </button>
+          <button
+            type="button"
+            onClick={() => { if (mode !== "signin") { setMode("signin"); setServerError(null); setErrors({}); } }}
+            className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition-colors duration-200 ${
+              mode === "signin" ? "bg-emerald-500 text-white" : "text-slate-400"
+            }`}
+          >
+            Sign In
+          </button>
+        </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 space-y-4">
@@ -196,15 +253,7 @@ export default function SignupPage() {
             mode === "signup" ? "Continue →" : "Sign in →"
           )}
         </button>
-
-        <button
-          onClick={() => { setMode(mode === "signup" ? "signin" : "signup"); setServerError(null); setErrors({}); }}
-          className="w-full text-center text-sm text-slate-500"
-        >
-          {mode === "signup"
-            ? <>Already have an account? <span className="text-emerald-400 font-medium">Sign in</span></>
-            : <>New user? <span className="text-emerald-400 font-medium">Create account</span></>}
-        </button>
+      </div>
       </div>
     </div>
   );

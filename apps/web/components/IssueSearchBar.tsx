@@ -20,27 +20,32 @@ export function IssueSearchBar({ urlPrefix }: { urlPrefix: string }) {
   }
 
   return (
-    <form onSubmit={handleSearch} className="flex items-center gap-2">
-      <div className="relative flex-1">
-        <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400"
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-        </svg>
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search by Issue ID…"
-          className="w-full rounded-lg border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm text-slate-800 placeholder:text-slate-400 focus:border-slate-400 focus:outline-none"
-        />
-      </div>
+    <form
+      onSubmit={handleSearch}
+      className="flex w-full max-w-[220px] items-center gap-1.5 rounded-full border border-slate-200 bg-white py-1 pl-3.5 pr-1 shadow-sm transition-all focus-within:border-slate-300 focus-within:shadow-md"
+    >
+      <svg
+        className="h-3.5 w-3.5 shrink-0 text-slate-400"
+        fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+      </svg>
+      <input
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search by Issue ID…"
+        className="min-w-0 flex-1 border-0 bg-transparent text-[13px] text-slate-700 placeholder:text-slate-400 focus:outline-none"
+      />
       <button
         type="submit"
-        className="rounded-lg bg-slate-800 px-3 py-2 text-sm font-medium text-white hover:bg-slate-700 transition"
+        disabled={!query.trim()}
+        aria-label="Search"
+        className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 disabled:opacity-0"
       >
-        Go
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12h14M13 6l6 6-6 6" />
+        </svg>
       </button>
     </form>
   );

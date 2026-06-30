@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { IssueSummary } from "@/lib/types";
-import { SeverityBadge, StatusBadge, VerifiedBadge } from "./ui/badges";
+import { SeverityBadge, StatusBadge } from "./ui/badges";
 import { authorityLabel } from "@/lib/authorities";
 
 function timeAgo(iso: string): string {
@@ -14,27 +14,29 @@ function timeAgo(iso: string): string {
 export function IssueCard({ issue, href }: { issue: IssueSummary; href?: string }) {
   const link = href ?? `/issues/${issue.id}`;
   return (
-    <Link href={link} className="block overflow-hidden rounded-xl border border-slate-200 bg-white">
-      {issue.cover_media_url && (
+    <Link href={link} className="flex gap-2.5 overflow-hidden rounded-xl border border-slate-200 bg-paper p-2">
+      {issue.cover_media_url ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={issue.cover_media_url} alt="" className="h-40 w-full object-cover" />
+        <img src={issue.cover_media_url} alt="" loading="lazy" className="h-16 w-16 shrink-0 rounded-lg object-cover" />
+      ) : (
+        <div className="h-16 w-16 shrink-0 rounded-lg bg-slate-100" />
       )}
-      <div className="space-y-2 p-3">
-        <div className="flex flex-wrap items-center gap-1.5">
+      <div className="min-w-0 flex-1 space-y-1 py-0.5">
+        <div className="flex flex-wrap items-center gap-1">
           <StatusBadge status={issue.status} />
           <SeverityBadge severity={issue.severity} />
-          <VerifiedBadge count={issue.corroboration_count} />
         </div>
-        <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{issue.title}</h3>
-        <p className="text-xs text-slate-500">
+        <h3 className="line-clamp-1 text-sm font-semibold leading-snug">{issue.title}</h3>
+        <p className="truncate text-xs text-slate-500">
           {issue.locality_name ?? "Delhi"}
-          {issue.distance_m != null && ` · ${Math.round(issue.distance_m)} m away`}
+          {issue.distance_m != null && ` · ${Math.round(issue.distance_m)}m`}
           {" · "}
           {timeAgo(issue.created_at)}
+          {issue.corroboration_count > 0 && ` · ✓${issue.corroboration_count}`}
         </p>
-        <div className="text-xs text-slate-500">
-          <span>{issue.primary_authority_slug ? authorityLabel(issue.primary_authority_slug) : "routing…"}</span>
-        </div>
+        <p className="truncate text-xs text-slate-500">
+          {issue.primary_authority_slug ? authorityLabel(issue.primary_authority_slug) : "routing…"}
+        </p>
       </div>
     </Link>
   );

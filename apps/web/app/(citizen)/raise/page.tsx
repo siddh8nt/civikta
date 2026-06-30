@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -260,8 +260,22 @@ function StepShell({
   onBack: () => void;
   children: React.ReactNode;
 }) {
+  // Fade + rise in once on first arrival at /raise, matching the My Locality
+  // page transition. StepShell is the same component instance across step
+  // switches, so this only fires on initial mount, not every step change.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   return (
-    <div className="flex min-h-screen flex-col bg-white" style={{ maxWidth: 480, margin: "0 auto" }}>
+    <div
+      className={`flex flex-col overflow-hidden bg-paper transition-all duration-300 ease-out ${
+        mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+      }`}
+      style={{ maxWidth: 480, margin: "0 auto", height: "calc(100dvh - 104px)" }}
+    >
       <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
         <button
           onClick={onBack}
@@ -593,7 +607,7 @@ export default function RaisePage() {
 
     return (
       <div
-        className="flex min-h-screen flex-col bg-white"
+        className="flex min-h-screen flex-col bg-paper"
         style={{ maxWidth: 480, margin: "0 auto" }}
       >
         {/* Header */}
@@ -642,7 +656,7 @@ export default function RaisePage() {
                         ? "bg-brand text-white shadow-md shadow-brand/30"
                         : isActive
                         ? "border-2 border-brand bg-brand/10 text-brand"
-                        : "border-2 border-slate-200 bg-slate-50 text-slate-300"
+                        : "border-2 border-slate-200 bg-cream text-slate-300"
                     }`}>
                       {isDone ? (
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -710,7 +724,7 @@ export default function RaisePage() {
                 </button>
                 <button
                   onClick={() => handleCvDecision(false)}
-                  className="w-full rounded-xl border border-slate-200 bg-white py-3 text-sm font-semibold text-slate-600 active:scale-95 transition-transform"
+                  className="w-full rounded-xl border border-slate-200 bg-paper py-3 text-sm font-semibold text-slate-600 active:scale-95 transition-transform"
                 >
                   No — it's a different issue
                 </button>
@@ -747,11 +761,11 @@ export default function RaisePage() {
         subtitle="Drag the map to place the pin exactly"
         onBack={handleBack}
       >
-        <div className="flex-1 px-3 pt-3 pb-2">
+        <div className="flex-1 overflow-y-auto px-3 pt-2 pb-1">
           <LocationStep value={loc} onChange={setLoc} />
         </div>
 
-        <div className="border-t border-slate-100 px-4 pb-8 pt-3 space-y-2">
+        <div className="border-t border-slate-100 px-4 pb-5 pt-2 space-y-2">
           {resolveError && (
             <p className="text-center text-xs text-rose-500">{resolveError}</p>
           )}
@@ -782,13 +796,13 @@ export default function RaisePage() {
               onClick={() => setShowLocConfirm(false)}
             />
             <div
-              className="relative rounded-t-3xl bg-white px-6 pb-10 pt-5 shadow-2xl"
+              className="relative rounded-t-3xl bg-paper px-6 pb-10 pt-5 shadow-2xl"
               style={{ animation: "slide-up 0.3s cubic-bezier(.4,0,.2,1) forwards" }}
             >
               <style>{`@keyframes slide-up{from{transform:translateY(100%)}to{transform:translateY(0)}}`}</style>
               <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-slate-200" />
               <p className="mb-4 text-sm font-bold text-slate-900">Issue location identified</p>
-              <div className="mb-5 rounded-2xl bg-slate-50 p-4 space-y-2.5">
+              <div className="mb-5 rounded-2xl bg-cream p-4 space-y-2.5">
                 {wardInfo.locality_name && (
                   <div className="flex items-center justify-between">
                     <span className="text-xs text-slate-400">Area</span>
@@ -880,7 +894,7 @@ export default function RaisePage() {
           onChange={(e) => handleFiles(e.target.files)}
         />
 
-        <div className="flex flex-1 flex-col items-center px-4 pt-4 pb-4 gap-4">
+        <div className="flex flex-1 flex-col items-center overflow-y-auto px-4 pt-4 pb-4 gap-4">
 
           {useNativeCamera ? (
             /* ── Native camera mode (HTTP LAN) ── */
@@ -991,7 +1005,7 @@ export default function RaisePage() {
             {Array.from({ length: 3 - photos.length }).map((_, i) => (
               <div
                 key={i}
-                className="h-20 w-20 shrink-0 rounded-xl border-2 border-dashed border-slate-200 bg-slate-50"
+                className="h-20 w-20 shrink-0 rounded-xl border-2 border-dashed border-slate-200 bg-cream"
               />
             ))}
           </div>
@@ -1097,7 +1111,7 @@ export default function RaisePage() {
 
           {/* Voice recorder — hold to speak */}
           {voice.supported() ? (
-            <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5">
+            <div className="rounded-2xl border border-slate-100 bg-cream p-5">
               {/* Instruction */}
               <p className="text-center text-xs font-semibold text-slate-500 mb-4">
                 {voice.state === "recording"
@@ -1117,7 +1131,7 @@ export default function RaisePage() {
                   className={`select-none touch-none flex h-24 w-24 flex-col items-center justify-center rounded-full transition-all duration-150 ${
                     voice.state === "recording"
                       ? "scale-110 bg-rose-500 text-white shadow-xl shadow-rose-200"
-                      : "bg-white border-2 border-slate-200 text-slate-600 active:scale-105 active:border-brand active:text-brand shadow-md"
+                      : "bg-paper border-2 border-slate-200 text-slate-600 active:scale-105 active:border-brand active:text-brand shadow-md"
                   }`}
                   aria-label="Hold to record"
                 >
@@ -1139,7 +1153,7 @@ export default function RaisePage() {
 
               {/* Live + saved transcript */}
               {(transcript || voice.interim) && (
-                <div className="rounded-xl bg-white border border-slate-200 px-3 py-2.5 text-sm text-slate-700 leading-relaxed">
+                <div className="rounded-xl bg-paper border border-slate-200 px-3 py-2.5 text-sm text-slate-700 leading-relaxed">
                   {transcript}
                   {voice.interim && (
                     <span className="text-slate-400"> {voice.interim}…</span>
@@ -1195,7 +1209,7 @@ export default function RaisePage() {
                             onClick={() =>
                               setAnsweredFollowUps((prev) => ({ ...prev, [q]: a }))
                             }
-                            className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs text-slate-700 active:bg-brand active:text-white active:border-brand transition-colors"
+                            className="rounded-full border border-slate-200 bg-paper px-3 py-1 text-xs text-slate-700 active:bg-brand active:text-white active:border-brand transition-colors"
                           >
                             {a}
                           </button>
@@ -1220,7 +1234,7 @@ export default function RaisePage() {
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
               placeholder="How long has it been there? Any landmark? Who is affected?…"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700 placeholder-slate-400 focus:border-brand focus:outline-none"
+              className="w-full rounded-xl border border-slate-200 bg-cream p-3 text-sm text-slate-700 placeholder-slate-400 focus:border-brand focus:outline-none"
             />
           </div>
 
@@ -1272,7 +1286,7 @@ export default function RaisePage() {
                 className="block w-full border-0 pointer-events-none"
               />
             </div>
-            <div className="flex items-center justify-between bg-white px-3 py-2">
+            <div className="flex items-center justify-between bg-paper px-3 py-2">
               <span className="text-xs font-medium text-slate-700">
                 {wardInfo?.locality_name ?? wardInfo?.ward_name ?? "Location confirmed"}
                 {wardInfo?.ward_no ? ` — Ward #${wardInfo.ward_no}` : ""}
@@ -1307,7 +1321,7 @@ export default function RaisePage() {
           <p className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">
             Your description
           </p>
-          <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+          <div className="rounded-2xl border border-slate-100 bg-cream p-4">
             <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
               {fullDescription || "(no description provided)"}
             </p>

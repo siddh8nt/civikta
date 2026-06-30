@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LocationStep } from "@/components/LocationStep";
 import { api } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import { getProfile, saveUserLocation, markOnboardingComplete, getUserId } from "@/lib/user";
 
 type LatLng = { lat: number; lng: number };
@@ -29,6 +30,8 @@ export default function LocationPage() {
   const [wardInfo, setWardInfo] = useState<WardInfo | null>(null);
   const [resolving, setResolving] = useState(false);
   const [resolveError, setResolveError] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   // Try GPS once on load to start centred on user
   useEffect(() => {
@@ -65,11 +68,17 @@ export default function LocationPage() {
       zone: wardInfo.zone,
       local_body_type: wardInfo.local_body_type,
     });
-    markOnboardingComplete();
-    setPageState("complete");
-    // Sync to backend (fire-and-forget — don't block the animation)
+
+    // Sync to the backend BEFORE declaring onboarding complete — this used
+    // to be fire-and-forget, which meant a stale/expired auth token at this
+    // exact moment would silently fail and leave the account with no
+    // server-side record at all, even though the UI looked successful.
+    // Future sign-ins on any other device would then never find this
+    // account's location.
+    setSyncing(true);
+    setSyncError(null);
     const profile = getProfile();
-    api.upsertMe({
+    const payload = {
       name: profile?.name,
       phone: profile?.phone,
       ward_no: wardInfo.ward_no,
@@ -78,7 +87,33 @@ export default function LocationPage() {
       local_body_type: wardInfo.local_body_type,
       home_lat: loc.lat,
       home_lng: loc.lng,
-    }).catch(console.error);
+    };
+
+    async function trySync(): Promise<boolean> {
+      try {
+        await api.upsertMe(payload);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+
+    let ok = await trySync();
+    if (!ok) {
+      // Token may have been stale at the first attempt — force a refresh
+      // and retry once before giving up.
+      try { await supabase.auth.refreshSession(); } catch { /* not signed in */ }
+      ok = await trySync();
+    }
+
+    setSyncing(false);
+    if (!ok) {
+      setSyncError("Couldn't save your locality to the server. Check your connection and try again.");
+      return;
+    }
+
+    markOnboardingComplete();
+    setPageState("complete");
     setTimeout(() => {
       router.replace(`/my-locality?lat=${loc.lat}&lng=${loc.lng}`);
     }, 2200);
@@ -123,7 +158,7 @@ export default function LocationPage() {
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-white overflow-hidden" style={{ maxWidth: 480, margin: "0 auto" }}>
+    <div className="flex h-dvh flex-col bg-paper overflow-hidden" style={{ maxWidth: 480, margin: "0 auto" }}>
 
       {/* Header */}
       <div className="flex items-center gap-3 border-b border-slate-100 px-4 py-3">
@@ -175,7 +210,7 @@ export default function LocationPage() {
           />
 
           {/* Sheet */}
-          <div className="relative rounded-t-3xl bg-white px-6 pb-10 pt-5 shadow-2xl"
+          <div className="relative rounded-t-3xl bg-paper px-6 pb-10 pt-5 shadow-2xl"
             style={{ animation: "slide-up 0.3s cubic-bezier(.4,0,.2,1) forwards" }}>
             <style>{`@keyframes slide-up { from { transform: translateY(100%); } to { transform: translateY(0); } }`}</style>
 
@@ -183,7 +218,7 @@ export default function LocationPage() {
             <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-slate-200" />
 
             {/* Ward info */}
-            <div className="mb-5 rounded-2xl bg-slate-50 p-4 space-y-2.5">
+            <div className="mb-5 rounded-2xl bg-cream p-4 space-y-2.5">
               {wardInfo.locality_name && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold uppercase tracking-widest text-slate-400">Area</span>
@@ -226,16 +261,31 @@ export default function LocationPage() {
               Is this your correct locality? Civic issues and alerts will be personalised to this area.
             </p>
 
+            {syncError && (
+              <p className="mb-3 text-xs text-rose-500 text-center">{syncError}</p>
+            )}
+
             <div className="space-y-2">
               <button
                 onClick={handleConfirmLocation}
-                className="w-full rounded-2xl bg-emerald-500 py-4 text-sm font-bold text-white transition hover:bg-emerald-400 active:scale-95"
+                disabled={syncing}
+                className="w-full rounded-2xl bg-emerald-500 py-4 text-sm font-bold text-white transition hover:bg-emerald-400 active:scale-95 disabled:opacity-60"
               >
-                ✓ Confirm location
+                {syncing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    Saving…
+                  </span>
+                ) : syncError ? (
+                  "Try again"
+                ) : (
+                  "✓ Confirm location"
+                )}
               </button>
               <button
                 onClick={() => setPageState("map")}
-                className="w-full rounded-2xl border border-slate-200 py-3.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                disabled={syncing}
+                className="w-full rounded-2xl border border-slate-200 py-3.5 text-sm font-semibold text-slate-600 transition hover:bg-cream disabled:opacity-60"
               >
                 Change location
               </button>

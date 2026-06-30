@@ -100,8 +100,12 @@ class IssueService:
         issue = self.repo.get_issue(issue_id)
         if not issue:
             return None
-        media = self.repo.list_media_for_issue(issue_id)
-        events = self.repo.list_events(issue_id)
+        # issue_id may have been a short CIV-XXXXXXXX code resolved by
+        # get_issue() above — use the issue's real full UUID from here on,
+        # since media/event lookups filter on UUID columns too.
+        media = self.repo.list_media_for_issue(issue.id)
+        events = self.repo.list_events(issue.id)
+        media_urls = [m.storage_url for m in media] or ([issue.cover_media_url] if issue.cover_media_url else [])
         return IssueDetail(
             **_issue_base_fields(issue),
             id=issue.id,
@@ -114,7 +118,8 @@ class IssueService:
             ai_summary=issue.ai_summary,
             ai_confidence=issue.ai_confidence,
             last_corroborated_at=issue.last_corroborated_at,
-            media_urls=[m.storage_url for m in media] or ([issue.cover_media_url] if issue.cover_media_url else []),
+            cover_media_url=issue.cover_media_url or (media_urls[0] if media_urls else None),
+            media_urls=media_urls,
             timeline=[
                 TimelineEvent(event_type=e.event_type, actor_type=e.actor_type,
                               created_at=e.created_at, payload=e.payload)

@@ -2,12 +2,12 @@
 
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { api } from "@/lib/api";
+import { supabase } from "@/lib/supabase";
 import type { IssueSummary } from "@/lib/types";
 import { IssueCard } from "@/components/IssueCard";
 import { MapPlaceholder } from "@/components/MapPlaceholder";
-import { getUserLocation } from "@/lib/user";
+import { getUserLocation, saveUserLocation, type UserLocation } from "@/lib/user";
 
 // default center: Lajpat Nagar (matches seeded demo data)
 const FALLBACK = { lat: 28.5677, lng: 77.2433 };
@@ -22,6 +22,23 @@ function distKm(lat1: number, lng1: number, lat2: number, lng2: number) {
 }
 
 const TEST_MODE = false;
+
+function IssueCardSkeleton() {
+  return (
+    <div className="flex gap-2.5 overflow-hidden rounded-xl border border-slate-200 bg-paper p-2 animate-pulse">
+      <div className="h-16 w-16 shrink-0 rounded-lg bg-slate-200" />
+      <div className="min-w-0 flex-1 space-y-1.5 py-0.5">
+        <div className="flex gap-1">
+          <div className="h-4 w-14 rounded-full bg-slate-200" />
+          <div className="h-4 w-12 rounded-full bg-slate-200" />
+        </div>
+        <div className="h-4 w-3/4 rounded bg-slate-200" />
+        <div className="h-3 w-1/2 rounded bg-slate-200" />
+        <div className="h-3 w-2/5 rounded bg-slate-200" />
+      </div>
+    </div>
+  );
+}
 
 const FILTERS = [
   { slug: null, label: "All" },
@@ -45,14 +62,26 @@ function MyLocalityInner() {
   const [view, setView] = useState<"feed" | "map">("feed");
   const [issues, setIssues] = useState<IssueSummary[]>([]);
   const [filter, setFilter] = useState<string | null>(null);
+
+  // Fade + rise in on mount, so arriving here from sign-in (or anywhere
+  // else) reads as a continuous transition rather than a hard pop-in.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // Account's saved ward, for the Swiggy/Zomato-style "reporting in" strip.
+  const [myLocation, setMyLocation] = useState<UserLocation | null>(null);
+  useEffect(() => {
+    setMyLocation(getUserLocation());
+  }, []);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Priority: URL params (from onboarding) → saved location → GPS → fallback
     const urlLat = searchParams.get("lat");
     const urlLng = searchParams.get("lng");
-    const saved = getUserLocation();
 
     const load = (c: { lat: number; lng: number }) =>
       api
@@ -68,36 +97,94 @@ function MyLocalityInner() {
         .catch((e) => setError(String(e)))
         .finally(() => setLoading(false));
 
-    if (urlLat && urlLng) {
-      load({ lat: parseFloat(urlLat), lng: parseFloat(urlLng) });
-    } else if (saved) {
-      load({ lat: saved.lat, lng: saved.lng });
-    } else if (typeof navigator !== "undefined" && navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => load({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-        () => load(FALLBACK),
-        { timeout: 4000 },
-      );
-    } else {
-      load(FALLBACK);
+    function fromCacheOrGps() {
+      const saved = getUserLocation();
+      if (saved) {
+        load({ lat: saved.lat, lng: saved.lng });
+      } else if (typeof navigator !== "undefined" && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => load({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          () => load(FALLBACK),
+          { timeout: 4000 },
+        );
+      } else {
+        load(FALLBACK);
+      }
     }
+
+    async function resolveLocation() {
+      // 1. Explicit coords from just-completed onboarding always win.
+      if (urlLat && urlLng) {
+        load({ lat: parseFloat(urlLat), lng: parseFloat(urlLng) });
+        return;
+      }
+
+      // 2. If signed in, the backend record for THIS account is the only
+      // authoritative source — `civikta_location` in localStorage is a
+      // single device-wide key, so it may belong to a different account
+      // that previously used this browser. Never trust it over the
+      // authenticated account's own saved location.
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const me = await api.getMe();
+          if (me.home_lat != null && me.home_lng != null) {
+            saveUserLocation({
+              lat: me.home_lat,
+              lng: me.home_lng,
+              ward_no: me.ward_no ?? null,
+              ward_name: me.ward_name ?? null,
+              zone: me.zone ?? null,
+              local_body_type: me.local_body_type ?? null,
+            });
+            setMyLocation(getUserLocation());
+            load({ lat: me.home_lat, lng: me.home_lng });
+            return;
+          }
+        }
+      } catch {
+        // not signed in, or lookup failed — fall through to cache/GPS
+      }
+
+      // 3. Guest/demo usage (no session) — cached location, then GPS.
+      fromCacheOrGps();
+    }
+
+    resolveLocation();
   }, [searchParams]);
 
   const visible = TEST_MODE ? issues.filter((i) => i.ward_name === "__TEST__") : issues;
   const shown = filter ? visible.filter((i) => i.issue_category_slug === filter) : visible;
 
   return (
-    <main>
-      <header className="sticky top-10 z-10 border-b border-slate-200 bg-white/95 px-4 pb-2 pt-4 backdrop-blur">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold text-brand">My Locality</h1>
-          <div className="flex rounded-lg bg-slate-100 p-0.5 text-xs font-medium">
+    <main
+      className={`transition-all duration-300 ease-out ${
+        mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+      }`}
+    >
+      <header className="sticky top-10 z-10 border-b border-slate-200 bg-paper px-4 pb-2 pt-4 shadow-sm">
+        <div className="mb-1 flex items-center justify-between gap-2">
+          {myLocation && (myLocation.ward_name || myLocation.zone) ? (
+            <div className="flex min-w-0 items-center gap-1 text-[11px] font-semibold text-slate-500">
+              <svg viewBox="0 0 24 24" fill="none" className="h-3 w-3 shrink-0 text-brand" stroke="currentColor" strokeWidth={2.2}>
+                <path d="M12 21s7-7.5 7-12a7 7 0 10-14 0c0 4.5 7 12 7 12z" strokeLinejoin="round" />
+                <circle cx="12" cy="9" r="2.2" />
+              </svg>
+              <span className="truncate">
+                <span className="text-slate-600">{myLocation.ward_name ?? "your area"}</span>
+                {myLocation.zone && ` · ${myLocation.zone}`}
+              </span>
+            </div>
+          ) : (
+            <span />
+          )}
+          <div className="flex shrink-0 rounded-lg bg-slate-100 p-0.5 text-xs font-medium">
             {(["feed", "map"] as const).map((v) => (
               <button
                 key={v}
                 onClick={() => setView(v)}
                 className={`rounded-md px-3 py-1 capitalize ${
-                  view === v ? "bg-white text-brand shadow-sm" : "text-slate-500"
+                  view === v ? "bg-paper text-brand shadow-sm" : "text-slate-500"
                 }`}
               >
                 {v}
@@ -105,6 +192,7 @@ function MyLocalityInner() {
             ))}
           </div>
         </div>
+        <h1 className="text-lg font-bold text-brand">My Locality</h1>
         <div className="mt-2 flex gap-1.5 overflow-x-auto pb-1">
           {FILTERS.map((f) => (
             <button
@@ -123,7 +211,13 @@ function MyLocalityInner() {
       </header>
 
       <div className="p-4">
-        {loading && <p className="py-10 text-center text-sm text-slate-400">Loading nearby issues…</p>}
+        {loading && (
+          <div className="space-y-2">
+            {[1, 2, 3, 4].map((i) => (
+              <IssueCardSkeleton key={i} />
+            ))}
+          </div>
+        )}
         {error && (
           <div className="py-10 text-center">
             <p className="text-sm text-rose-500 mb-1">Couldn’t reach the API.</p>
@@ -132,7 +226,7 @@ function MyLocalityInner() {
         )}
         {!loading && !error && view === "map" && <MapPlaceholder issues={shown} />}
         {!loading && !error && view === "feed" && (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {shown.length === 0 && (
               <p className="py-10 text-center text-sm text-slate-400">No issues match this filter.</p>
             )}
@@ -142,13 +236,6 @@ function MyLocalityInner() {
           </div>
         )}
       </div>
-
-      <Link
-        href="/raise"
-        className="fixed bottom-20 left-1/2 z-20 -translate-x-1/2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg"
-      >
-        ➕ Raise an issue
-      </Link>
     </main>
   );
 }

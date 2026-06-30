@@ -29,7 +29,7 @@ class SigninBody(BaseModel):
     password_hash: str | None = None
 
 
-@router.post("/me")
+@router.post("/me", summary="Create or update the citizen's profile")
 async def upsert_me(
     body: UpsertUserBody,
     user: AuthIdentity = Depends(get_current_user),
@@ -42,7 +42,7 @@ async def upsert_me(
     return {"id": user.uid, **data}
 
 
-@router.get("/me")
+@router.get("/me", summary="Fetch the current citizen's profile")
 async def get_me(
     user: AuthIdentity = Depends(get_current_user),
     repo: Repository = Depends(get_repository),
@@ -54,7 +54,7 @@ async def get_me(
     return {"id": user.uid, "role": user.role}
 
 
-@router.post("/signin")
+@router.post("/signin", summary="Sign in with phone number")
 async def signin(
     body: SigninBody,
     repo: Repository = Depends(get_repository),

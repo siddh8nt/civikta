@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getProfile } from "@/lib/user";
+import { getProfile, type UserProfile } from "@/lib/user";
 
 const STAGES = [
   { label: "Connecting to DigiLocker", duration: 900 },
@@ -16,7 +16,14 @@ const TOTAL = STAGES.reduce((s, x) => s + x.duration, 0); // ~5000 ms
 export default function KycPage() {
   const router = useRouter();
   const routerRef = useRef(router);
-  const profile = getProfile();
+
+  // Read localStorage only after mount — it doesn't exist during SSR, so
+  // reading it directly in the render body causes a server/client mismatch
+  // (hydration error) whenever a profile is already cached.
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  useEffect(() => {
+    setProfile(getProfile());
+  }, []);
 
   const [progress, setProgress] = useState(0);      // 0-100
   const [stageIdx, setStageIdx] = useState(0);

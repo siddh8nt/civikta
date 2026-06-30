@@ -17,7 +17,7 @@ html, body {
   max-width: 480px;
   margin: 0 auto;
   min-height: 100dvh;
-  background: white;
+  background: #f6f1e7; /* cream — citizen app palette */
   position: relative;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.06);
 }

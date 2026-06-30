@@ -24,6 +24,7 @@ class Repository(Protocol):
         *,
         statuses: list[str] | None = None,
         primary_authority_slug: str | None = None,
+        primary_authority_slugs: list[str] | None = None,
         ward_no: int | None = None,
         issue_type_slug: str | None = None,
     ) -> list[IssueRecord]: ...

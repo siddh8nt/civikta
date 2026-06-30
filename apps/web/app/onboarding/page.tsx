@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { markOnboardingComplete } from "@/lib/user";
 
@@ -71,6 +71,70 @@ export default function OnboardingPage() {
   const [slide, setSlide] = useState(0);
   const [exiting, setExiting] = useState(false);
 
+  // Prefetch the signup route's JS as soon as onboarding mounts, so "Get
+  // Started" navigates instantly instead of waiting on an on-demand fetch.
+  useEffect(() => {
+    router.prefetch("/onboarding/signup");
+  }, [router]);
+
+  // ── Swipe gesture state ──────────────────────────────────────────────────
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const [viewportWidth, setViewportWidth] = useState(0);
+  const [dragX, setDragX] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startRef = useRef<{ x: number; y: number } | null>(null);
+  const horizontalRef = useRef<boolean | null>(null); // null = undecided yet
+
+  // Measure the actual rendered width so the track can be sized in px —
+  // avoids flexbox % sizing ambiguity in nested flex containers.
+  useEffect(() => {
+    function measure() {
+      if (viewportRef.current) setViewportWidth(viewportRef.current.offsetWidth);
+    }
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  function goTo(i: number) {
+    setSlide(Math.max(0, Math.min(SLIDES.length - 1, i)));
+  }
+
+  function onPointerDown(e: React.PointerEvent) {
+    startRef.current = { x: e.clientX, y: e.clientY };
+    horizontalRef.current = null;
+    setDragging(true);
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (!startRef.current) return;
+    const dx = e.clientX - startRef.current.x;
+    const dy = e.clientY - startRef.current.y;
+
+    // Decide gesture direction once movement is big enough to be intentional
+    if (horizontalRef.current === null && (Math.abs(dx) > 8 || Math.abs(dy) > 8)) {
+      horizontalRef.current = Math.abs(dx) > Math.abs(dy);
+    }
+    if (!horizontalRef.current) return; // vertical/ambiguous — ignore
+
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+    // Rubber-band resistance at the edges
+    const atStart = slide === 0 && dx > 0;
+    const atEnd = slide === SLIDES.length - 1 && dx < 0;
+    setDragX(atStart || atEnd ? dx * 0.35 : dx);
+  }
+
+  function endDrag() {
+    if (horizontalRef.current) {
+      const threshold = 60;
+      if (dragX <= -threshold) goTo(slide + 1);
+      else if (dragX >= threshold) goTo(slide - 1);
+    }
+    setDragging(false);
+    setDragX(0);
+    startRef.current = null;
+    horizontalRef.current = null;
+  }
 
   function next() {
     if (slide < SLIDES.length - 1) {
@@ -82,7 +146,7 @@ export default function OnboardingPage() {
 
   function finish() {
     setExiting(true);
-    setTimeout(() => router.replace("/onboarding/signup"), 300);
+    router.replace("/onboarding/signup");
   }
 
   const s = SLIDES[slide];
@@ -90,9 +154,12 @@ export default function OnboardingPage() {
 
   return (
     <div
-      className={`relative flex h-dvh flex-col bg-gradient-to-b ${s.bg} transition-all duration-500`}
+      className={`relative flex h-dvh flex-col bg-gradient-to-b ${s.bg} transition-colors duration-500 overflow-hidden`}
       style={{ maxWidth: 480, margin: "0 auto" }}
     >
+      {/* Content wrapper — fades out on exit while the dark gradient behind it
+          stays solid, so the transition never flashes the page's light body bg */}
+      <div className={`flex h-full flex-col transition-opacity duration-150 ${exiting ? "opacity-0" : "opacity-100"}`}>
       {/* Skip */}
       <div className="flex justify-end px-6 pt-6">
         <button
@@ -103,17 +170,42 @@ export default function OnboardingPage() {
         </button>
       </div>
 
-      {/* Slide content */}
-      <div className="flex flex-1 flex-col items-center justify-center px-8 pb-8 text-center">
-        <div className="mb-8">{s.icon}</div>
+      {/* Swipeable slide track */}
+      <div
+        ref={viewportRef}
+        className="relative flex-1 overflow-hidden touch-pan-y"
+        onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
+        onPointerUp={endDrag}
+        onPointerCancel={endDrag}
+        onPointerLeave={() => dragging && endDrag()}
+      >
+        <div
+          className="flex h-full"
+          style={{
+            width: viewportWidth ? SLIDES.length * viewportWidth : undefined,
+            transform: `translateX(${viewportWidth ? -(slide * viewportWidth) + dragX : 0}px)`,
+            transition: dragging ? "none" : "transform 380ms cubic-bezier(.22,1,.36,1)",
+          }}
+        >
+          {SLIDES.map((slideData, i) => (
+            <div
+              key={i}
+              className="flex h-full shrink-0 flex-col items-center justify-center px-8 pb-8 text-center select-none"
+              style={{ width: viewportWidth || "100%" }}
+            >
+              <div className="mb-8">{slideData.icon}</div>
 
-        <p className={`mb-2 text-xs font-bold uppercase tracking-widest ${s.accent}`}>
-          {s.eyebrow}
-        </p>
-        <h1 className="mb-4 text-3xl font-extrabold tracking-tight text-white">
-          {s.headline}
-        </h1>
-        <p className="max-w-xs text-sm leading-relaxed text-slate-300">{s.sub}</p>
+              <p className={`mb-2 text-xs font-bold uppercase tracking-widest ${slideData.accent}`}>
+                {slideData.eyebrow}
+              </p>
+              <h1 className="mb-4 text-3xl font-extrabold tracking-tight text-white">
+                {slideData.headline}
+              </h1>
+              <p className="max-w-xs text-sm leading-relaxed text-slate-300">{slideData.sub}</p>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Bottom nav */}
@@ -142,6 +234,7 @@ export default function OnboardingPage() {
         >
           {isLast ? "Get Started →" : "Next"}
         </button>
+      </div>
       </div>
     </div>
   );

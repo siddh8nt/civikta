@@ -42,12 +42,14 @@ class MemoryRepository:
         return issue
 
     def list_issues(self, *, statuses=None, primary_authority_slug=None,
-                    ward_no=None, issue_type_slug=None) -> list[IssueRecord]:
+                    primary_authority_slugs=None, ward_no=None, issue_type_slug=None) -> list[IssueRecord]:
         out = list(self._issues.values())
         if statuses:
             out = [i for i in out if i.status in statuses]
         if primary_authority_slug:
             out = [i for i in out if i.primary_authority_slug == primary_authority_slug]
+        if primary_authority_slugs:
+            out = [i for i in out if i.primary_authority_slug in primary_authority_slugs]
         if ward_no is not None:
             out = [i for i in out if i.ward_no == ward_no]
         if issue_type_slug:

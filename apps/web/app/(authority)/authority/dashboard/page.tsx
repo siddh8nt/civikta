@@ -64,12 +64,11 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load all issues to debug if filtering is the issue
-    api.authorityQueue({ sort: "urgency" })
+    api.authorityQueue({ authority: authority || undefined, sort: "urgency" })
       .then(setIssues)
       .catch(() => setIssues([]))
       .finally(() => setLoading(false));
-  }, []);
+  }, [authority]);
 
   const open     = issues.filter((i) => !["resolved", "rejected"].includes(i.status));
   const urgent   = issues.filter((i) => i.urgency_score >= 5);

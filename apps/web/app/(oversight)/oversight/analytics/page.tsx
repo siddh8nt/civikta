@@ -103,14 +103,17 @@ export default function AnalyticsChatPage() {
         <div>
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-slate-900">CIVIKTA Analytics</span>
-            <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-violet-700">
+            <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-widest text-indigo-800">
               Gemini Agent
             </span>
           </div>
           <p className="text-[10px] text-slate-400">State-wide civic intelligence · Policy & audit analysis</p>
         </div>
-        <Link href="/oversight/dashboard" className="text-xs text-slate-500 hover:text-slate-700">
-          ← Dashboard
+        <Link href="/oversight/dashboard" className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-700 transition-colors">
+          <svg className="h-3 w-3 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+          </svg>
+          Dashboard
         </Link>
       </header>
 
@@ -119,8 +122,8 @@ export default function AnalyticsChatPage() {
         {!hasMessages && (
           <div className="mx-auto max-w-2xl">
             <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100">
-                <svg className="h-7 w-7 text-violet-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-100">
+                <svg className="h-7 w-7 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0 0 20.25 18V6A2.25 2.25 0 0 0 18 3.75H6A2.25 2.25 0 0 0 3.75 6v12A2.25 2.25 0 0 0 6 20.25Z" />
                 </svg>
               </div>
@@ -135,7 +138,7 @@ export default function AnalyticsChatPage() {
                 <button
                   key={q}
                   onClick={() => send(q)}
-                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 hover:border-violet-300 hover:bg-violet-50 transition"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm text-slate-700 hover:border-indigo-300 hover:bg-indigo-50 transition"
                 >
                   {q}
                 </button>
@@ -147,7 +150,7 @@ export default function AnalyticsChatPage() {
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "user" ? (
-              <div className="max-w-xl rounded-2xl bg-violet-600 px-4 py-3 text-sm text-white">
+              <div className="max-w-xl rounded-2xl bg-indigo-700 px-4 py-3 text-sm text-white">
                 {msg.text}
               </div>
             ) : msg.loading ? (
@@ -175,12 +178,12 @@ export default function AnalyticsChatPage() {
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
             disabled={busy}
             placeholder="Ask about any authority, ward, zone, or issue type…"
-            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400 disabled:opacity-50"
+            className="flex-1 rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
           />
           <button
             disabled={busy || !input.trim()}
             onClick={() => send(input)}
-            className="rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-40 transition"
+            className="rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-800 disabled:opacity-40 transition"
           >
             Ask
           </button>
@@ -195,9 +198,9 @@ function AssistantLoading() {
     <div className="max-w-2xl rounded-2xl border border-slate-200 bg-white p-4">
       <div className="flex items-center gap-2 text-sm text-slate-500">
         <div className="flex gap-1">
-          <span className="h-2 w-2 animate-bounce rounded-full bg-violet-400 [animation-delay:0ms]" />
-          <span className="h-2 w-2 animate-bounce rounded-full bg-violet-400 [animation-delay:150ms]" />
-          <span className="h-2 w-2 animate-bounce rounded-full bg-violet-400 [animation-delay:300ms]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-400 [animation-delay:0ms]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-400 [animation-delay:150ms]" />
+          <span className="h-2 w-2 animate-bounce rounded-full bg-indigo-400 [animation-delay:300ms]" />
         </div>
         <span>Querying live data…</span>
       </div>
@@ -209,8 +212,8 @@ function openReport(question: string, text: string, tool_calls: ToolCall[]) {
   const timestamp = new Date().toLocaleString("en-IN", { dateStyle: "long", timeStyle: "short" });
   const uniqueTools = [...new Set(tool_calls.map(t => TOOL_LABELS[t.name] ?? t.name))];
   const toolsSummary = tool_calls.length > 0
-    ? `<p style="margin:0 0 4px 0;font-size:11px;color:#6d28d9;font-weight:600;">Data sources queried (${tool_calls.length})</p>
-       <p style="margin:0;font-size:11px;color:#7c3aed;">${uniqueTools.join(" · ")}</p>`
+    ? `<p style="margin:0 0 4px 0;font-size:11px;color:#3730a3;font-weight:600;">Data sources queried (${tool_calls.length})</p>
+       <p style="margin:0;font-size:11px;color:#4338ca;">${uniqueTools.join(" · ")}</p>`
     : "";
 
   const bodyHtml = parseBlocks(text).map(b => {
@@ -249,26 +252,26 @@ function openReport(question: string, text: string, tool_calls: ToolCall[]) {
     background: #f8fafc; color: #475569; font-size: 12px; font-weight: 500;
     cursor: pointer; text-decoration: none; transition: all .15s;
   }
-  .back-btn:hover { border-color: #c4b5fd; background: #f5f3ff; color: #7c3aed; }
+  .back-btn:hover { border-color: #a5b4fc; background: #eef2ff; color: #4338ca; }
   .topbar-title { font-size: 13px; font-weight: 600; color: #64748b; }
   .pdf-btn {
     display: flex; align-items: center; gap: 6px;
     padding: 6px 14px; border-radius: 8px; border: none;
-    background: #7c3aed; color: #fff; font-size: 12px; font-weight: 600;
+    background: #4338ca; color: #fff; font-size: 12px; font-weight: 600;
     cursor: pointer; transition: background .15s;
   }
-  .pdf-btn:hover { background: #6d28d9; }
+  .pdf-btn:hover { background: #3730a3; }
 
   /* ── Report content ──────────────────────────── */
   .page { max-width: 820px; margin: 32px auto; background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 40px 48px; }
-  .report-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 2px solid #7c3aed; padding-bottom: 16px; margin-bottom: 24px; }
-  .brand { font-size: 20px; font-weight: 800; color: #7c3aed; letter-spacing: -0.5px; }
+  .report-header { display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 2px solid #4338ca; padding-bottom: 16px; margin-bottom: 24px; }
+  .brand { font-size: 20px; font-weight: 800; color: #4338ca; letter-spacing: -0.5px; }
   .brand span { color: #1e293b; }
   .meta { text-align: right; font-size: 11px; color: #64748b; line-height: 1.6; }
-  .question-box { background: #f5f3ff; border-left: 3px solid #7c3aed; padding: 10px 14px; margin-bottom: 20px; border-radius: 0 6px 6px 0; }
-  .question-label { font-size: 10px; font-weight: 700; color: #7c3aed; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .question-box { background: #eef2ff; border-left: 3px solid #4338ca; padding: 10px 14px; margin-bottom: 20px; border-radius: 0 6px 6px 0; }
+  .question-label { font-size: 10px; font-weight: 700; color: #4338ca; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
   .question-text { font-size: 13px; font-weight: 600; color: #1e293b; }
-  .tools-box { background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 6px; padding: 10px 14px; margin-bottom: 20px; }
+  .tools-box { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 6px; padding: 10px 14px; margin-bottom: 20px; }
   .body h1 { font-size: 16px; font-weight: 700; color: #0f172a; margin: 20px 0 8px; }
   .body h2 { font-size: 14px; font-weight: 700; color: #1e293b; margin: 16px 0 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
   .body h3 { font-size: 13px; font-weight: 700; color: #334155; margin: 14px 0 4px; }
@@ -278,8 +281,8 @@ function openReport(question: string, text: string, tool_calls: ToolCall[]) {
   .body br { display: block; margin: 4px 0; }
   .tbl-wrap { overflow-x: auto; margin: 14px 0; border-radius: 6px; border: 1px solid #e2e8f0; }
   .data-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-  .data-table thead tr { background: #f5f3ff; }
-  .data-table th { padding: 8px 12px; text-align: left; font-weight: 700; color: #6d28d9; border-bottom: 2px solid #ddd6fe; white-space: nowrap; }
+  .data-table thead tr { background: #eef2ff; }
+  .data-table th { padding: 8px 12px; text-align: left; font-weight: 700; color: #3730a3; border-bottom: 2px solid #c7d2fe; white-space: nowrap; }
   .data-table td { padding: 6px 12px; color: #334155; border-bottom: 1px solid #f1f5f9; }
   .data-table .tr-even { background: #fff; }
   .data-table .tr-odd  { background: #f8fafc; }
@@ -292,7 +295,7 @@ function openReport(question: string, text: string, tool_calls: ToolCall[]) {
     @page { margin: 1.5cm 1.8cm; size: A4; }
     h2, h3 { page-break-after: avoid; }
     .question-box, .tools-box, .tbl-wrap { page-break-inside: avoid; }
-    .data-table th { background: #f5f3ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .data-table th { background: #eef2ff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .data-table .tr-odd { background: #f8fafc !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
@@ -316,7 +319,7 @@ function openReport(question: string, text: string, tool_calls: ToolCall[]) {
   <div class="report-header">
     <div>
       <div class="brand">CIVIKTA<span> Analytics</span></div>
-      <div style="font-size:11px;color:#7c3aed;margin-top:2px;">Oversight Intelligence Report</div>
+      <div style="font-size:11px;color:#4338ca;margin-top:2px;">Oversight Intelligence Report</div>
     </div>
     <div class="meta">Generated: ${timestamp}<br>NCT Delhi · Civic Issue Platform<br>Powered by Gemini on Vertex AI</div>
   </div>
@@ -357,10 +360,10 @@ function AssistantMessage({ text, tool_calls, suggested_questions, question, onS
     <div className="max-w-2xl w-full space-y-2">
       {/* Tool calls summary — always visible when present */}
       {tool_calls.length > 0 && (
-        <div className="rounded-xl border border-violet-100 bg-violet-50 px-3 py-2">
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-3 py-2">
           <button
             onClick={() => setShowTools((v) => !v)}
-            className="flex w-full items-center justify-between text-xs font-semibold text-violet-700"
+            className="flex w-full items-center justify-between text-xs font-semibold text-indigo-800"
           >
             <span className="flex items-center gap-1.5">
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -374,12 +377,12 @@ function AssistantMessage({ text, tool_calls, suggested_questions, question, onS
           {showTools && (
             <div className="mt-2 space-y-2">
               {tool_calls.map((tc, i) => (
-                <div key={i} className="rounded-lg border border-violet-200 bg-white p-2.5 text-xs">
+                <div key={i} className="rounded-lg border border-indigo-200 bg-white p-2.5 text-xs">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-violet-800">
+                    <span className="font-semibold text-indigo-900">
                       {TOOL_LABELS[tc.name] ?? tc.name}
                     </span>
-                    <span className="rounded bg-violet-100 px-1.5 py-0.5 text-[10px] font-mono text-violet-600">
+                    <span className="rounded bg-indigo-100 px-1.5 py-0.5 text-[10px] font-mono text-indigo-700">
                       {tc.name}
                     </span>
                   </div>
@@ -411,7 +414,7 @@ function AssistantMessage({ text, tool_calls, suggested_questions, question, onS
           <div className="mt-4 flex justify-end border-t border-slate-100 pt-3">
             <button
               onClick={() => openReport(question ?? "Oversight Report", text, tool_calls)}
-              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700 transition"
+              className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-600 hover:border-indigo-300 hover:bg-indigo-50 hover:text-indigo-800 transition"
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15" />
@@ -429,9 +432,9 @@ function AssistantMessage({ text, tool_calls, suggested_questions, question, onS
             <button
               key={i}
               onClick={() => onSuggest(q)}
-              className="flex items-center gap-1.5 rounded-full border border-violet-200 bg-white px-3 py-1.5 text-xs text-violet-700 shadow-sm hover:border-violet-400 hover:bg-violet-50 hover:shadow transition-all"
+              className="flex items-center gap-1.5 rounded-full border border-indigo-200 bg-white px-3 py-1.5 text-xs text-indigo-800 shadow-sm hover:border-indigo-400 hover:bg-indigo-50 hover:shadow transition-all"
             >
-              <svg className="h-3 w-3 shrink-0 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg className="h-3 w-3 shrink-0 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z" />
               </svg>
               {q}
@@ -500,9 +503,9 @@ function MarkdownText({ text }: { text: string }) {
           <div key={i} className="my-3 overflow-x-auto rounded-lg border border-slate-200">
             <table className="w-full border-collapse text-xs">
               <thead>
-                <tr className="bg-violet-50">
+                <tr className="bg-indigo-50">
                   {b.headers.map((h, j) => (
-                    <th key={j} className="border-b border-slate-200 px-3 py-2 text-left font-semibold text-violet-800 whitespace-nowrap">
+                    <th key={j} className="border-b border-slate-200 px-3 py-2 text-left font-semibold text-indigo-900 whitespace-nowrap">
                       {h}
                     </th>
                   ))}

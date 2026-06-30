@@ -438,22 +438,24 @@ class GeminiClient:
         from google import genai
         from google.genai import types as gtypes
 
-        if settings.gcp_project:
-            # Vertex AI / Google Agent Platform — uses ADC (gcloud auth application-default login)
-            # or the Cloud Run service account automatically. No daily rate limits; billed to GCP credits.
+        if settings.gemini_api_key:
+            # Gemini API / AI Studio — explicit key wins over ADC.
+            # On Cloud Run without this key, ADC picks up the service account and routes
+            # calls to aiplatform.endpoints.predict (Vertex AI), which 403s unless the SA
+            # has roles/aiplatform.user. Using an explicit API key avoids that entirely.
+            self._client = genai.Client(api_key=settings.gemini_api_key)
+            log.info("Gemini client: AI Studio API key")
+        elif settings.gcp_project:
+            # Vertex AI — only when no API key is set and SA has aiplatform.user role.
             self._client = genai.Client(
                 vertexai=True,
                 project=settings.gcp_project,
                 location=settings.gcp_location,
             )
             log.info("Gemini client: Vertex AI project=%s location=%s", settings.gcp_project, settings.gcp_location)
-        elif settings.gemini_api_key:
-            # Gemini API / AI Studio free tier (fallback)
-            self._client = genai.Client(api_key=settings.gemini_api_key)
-            log.info("Gemini client: AI Studio API key (free tier)")
         else:
             raise RuntimeError(
-                "Set GCP_PROJECT (Vertex AI) or GEMINI_API_KEY (free tier) in .env"
+                "Set GEMINI_API_KEY (AI Studio) or GCP_PROJECT (Vertex AI) in .env"
             )
 
         self._gtypes = gtypes

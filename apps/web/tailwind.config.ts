@@ -10,6 +10,10 @@ const config: Config = {
           dark: "#115e59",
           light: "#5eead4",
         },
+        // Warm citizen-app palette — replaces stark white/cool-slate
+        // backgrounds in the citizen-facing surfaces only.
+        cream: "#f6f1e7",  // page background
+        paper: "#fffdf7",  // card / surface background
       },
     },
   },

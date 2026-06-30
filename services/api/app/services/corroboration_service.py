@@ -47,6 +47,16 @@ class CorroborationService:
         if not issue:
             return None
 
+        # One "affected too" corroboration per citizen per issue — repeat
+        # taps on the button must not keep inflating the count.
+        if req.affected_too:
+            already = any(
+                r.created_by == user_id and r.affected_too_flag
+                for r in self.repo.list_reports_for_issue(issue_id)
+            )
+            if already:
+                return issue
+
         report = IssueReportRecord(
             created_by=user_id,
             raw_description=req.note,

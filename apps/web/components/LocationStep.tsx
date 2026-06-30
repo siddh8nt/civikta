@@ -5,6 +5,7 @@ import {
   APIProvider,
   Map,
   useMap,
+  useApiIsLoaded,
 } from "@vis.gl/react-google-maps";
 
 const MAPS_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -70,6 +71,17 @@ function LocationStepInner({
   onChange: (v: LatLng) => void;
 }) {
   const map = useMap();
+  const apiLoaded = useApiIsLoaded();
+  // Force the skeleton to stay visible for a minimum stretch — the Maps
+  // script is often already cached from an earlier page in the same
+  // session, which would otherwise make apiLoaded flip to true instantly
+  // and the skeleton never actually show.
+  const [mapsLoaded, setMapsLoaded] = useState(false);
+  useEffect(() => {
+    if (!apiLoaded) return;
+    const t = setTimeout(() => setMapsLoaded(true), 350);
+    return () => clearTimeout(t);
+  }, [apiLoaded]);
   const [dragging, setDragging] = useState(false);
   const [coords, setCoords] = useState(value);
   const [gpsState, setGpsState] = useState<"idle" | "loading" | "done" | "error">("idle");
@@ -179,17 +191,17 @@ function LocationStepInner({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search address, locality or landmark…"
-          className="w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-4 text-sm text-slate-800 shadow-sm placeholder-slate-400 focus:border-brand focus:outline-none"
+          className="w-full rounded-xl border border-slate-200 bg-paper py-3 pl-9 pr-4 text-sm text-slate-800 shadow-sm placeholder-slate-400 focus:border-brand focus:outline-none"
           autoComplete="off"
         />
         {results.length > 0 && (
-          <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+          <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-xl border border-slate-200 bg-paper shadow-lg">
             {results.map((r, i) => (
               <button
                 key={i}
                 type="button"
                 onClick={() => selectResult(r)}
-                className="w-full border-b border-slate-100 px-4 py-2.5 text-left text-sm text-slate-700 last:border-0 hover:bg-slate-50"
+                className="w-full border-b border-slate-100 px-4 py-2.5 text-left text-sm text-slate-700 last:border-0 hover:bg-cream"
               >
                 <span className="font-medium">{r.display_name.split(",")[0]}</span>
                 <span className="block truncate text-xs text-slate-400">
@@ -201,7 +213,7 @@ function LocationStepInner({
         )}
       </div>
 
-      <div className="relative overflow-hidden rounded-2xl shadow-md" style={{ height: 300 }}>
+      <div className="relative overflow-hidden rounded-2xl shadow-md" style={{ height: 220 }}>
         <Map
           style={{ height: "100%", width: "100%" }}
           defaultCenter={value}
@@ -217,12 +229,15 @@ function LocationStepInner({
           onDragstart={() => setDragging(true)}
           onDragend={() => setDragging(false)}
         />
+        {!mapsLoaded && (
+          <div className="absolute inset-0 animate-pulse bg-slate-200" />
+        )}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <CenterPin lifted={dragging} />
           <PinShadow lifted={dragging} />
         </div>
-        {!dragging && (
-          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-white/90 px-3 py-1 text-[11px] text-slate-600 shadow">
+        {!dragging && mapsLoaded && (
+          <div className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-paper/90 px-3 py-1 text-[11px] text-slate-600 shadow">
             Drag map to adjust pin
           </div>
         )}
@@ -232,7 +247,7 @@ function LocationStepInner({
         type="button"
         onClick={handleGPS}
         disabled={gpsState === "loading"}
-        className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand py-3 text-sm font-semibold text-brand transition hover:bg-brand/5 disabled:opacity-50"
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand py-2.5 text-sm font-semibold text-brand transition hover:bg-brand/5 disabled:opacity-50"
       >
         {gpsState === "loading"
           ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand border-t-transparent" />
@@ -240,14 +255,14 @@ function LocationStepInner({
         {gpsState === "loading" ? "Locating…" : gpsState === "done" ? "Drag to fine-tune" : gpsState === "error" ? "GPS unavailable" : "Use my location"}
       </button>
 
-      <p className="text-center text-[11px] tabular-nums text-slate-400">
+      <p className="text-center text-[10px] tabular-nums text-slate-400">
         {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}
       </p>
 
       {/* Not-in-Delhi dialog */}
       {notInDelhi && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-6">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-sm rounded-2xl bg-paper p-6 shadow-2xl">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-2xl">
               🗺️
             </div>
@@ -272,7 +287,7 @@ function LocationStepInner({
               </button>
               <button
                 onClick={() => setNotInDelhi(false)}
-                className="w-full rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                className="w-full rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 transition hover:bg-cream"
               >
                 Cancel
               </button>
@@ -324,7 +339,7 @@ function LocationStepFallback({
       />
       <div className="relative flex h-56 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-50 to-slate-100">
         <span className="text-4xl">📍</span>
-        <span className="absolute bottom-2 left-2 rounded bg-white/90 px-2 py-0.5 text-xs text-slate-500">
+        <span className="absolute bottom-2 left-2 rounded bg-paper/90 px-2 py-0.5 text-xs text-slate-500">
           {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
         </span>
       </div>
@@ -339,7 +354,7 @@ function LocationStepFallback({
 
       {notInDelhi && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 px-6">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl">
+          <div className="w-full max-w-sm rounded-2xl bg-paper p-6 shadow-2xl">
             <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-100 text-2xl">
               🗺️
             </div>
@@ -357,7 +372,7 @@ function LocationStepFallback({
               </button>
               <button
                 onClick={() => setNotInDelhi(false)}
-                className="w-full rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                className="w-full rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-600 transition hover:bg-cream"
               >
                 Cancel
               </button>

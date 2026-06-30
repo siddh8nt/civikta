@@ -63,6 +63,7 @@ class IssueDetail(IssueBase):
     ai_summary: str | None = None
     ai_confidence: float | None = None
     last_corroborated_at: datetime | None = None
+    cover_media_url: str | None = None
     media_urls: list[str] = Field(default_factory=list)
     timeline: list[TimelineEvent] = Field(default_factory=list)
 

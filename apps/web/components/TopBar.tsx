@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { getProfile, getUserLocation, resetOnboarding } from "@/lib/user";
+import { supabase } from "@/lib/supabase";
 
 // Pages that show a back-to-locality arrow on the left
 const BACK_TO_LOCALITY = new Set(["/raise", "/my-reports"]);
@@ -56,7 +57,7 @@ export function TopBar() {
     right = (
       <button
         onClick={() => setAccountOpen(true)}
-        className="ml-auto flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-600 active:bg-slate-100"
+        className="ml-auto flex items-center gap-1.5 rounded-full border border-slate-200 bg-cream px-2.5 py-1 text-xs font-semibold text-slate-600 active:bg-slate-100"
         aria-label="My Account"
       >
         <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden>
@@ -72,7 +73,7 @@ export function TopBar() {
 
   return (
     <>
-      <div className="fixed left-1/2 top-0 z-30 flex h-10 w-full max-w-[480px] -translate-x-1/2 items-center border-b border-slate-100 bg-white/96 px-3 backdrop-blur">
+      <div className="fixed left-1/2 top-0 z-30 flex h-10 w-full max-w-[480px] -translate-x-1/2 items-center border-b border-slate-200 bg-paper px-3 shadow-sm">
         {left}
         <Link
           href="/my-locality"
@@ -86,6 +87,7 @@ export function TopBar() {
 
       {/* My Account sheet */}
       {accountOpen && <AccountSheet onClose={() => setAccountOpen(false)} onSignOut={() => {
+        supabase.auth.signOut().catch(() => {});
         resetOnboarding();
         setAccountOpen(false);
         router.replace("/");
@@ -138,7 +140,7 @@ function AccountSheet({ onClose, onSignOut }: { onClose: () => void; onSignOut: 
       {/* Sheet */}
       <div
         ref={sheetRef}
-        className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 rounded-t-2xl bg-white pb-10 shadow-xl"
+        className="fixed bottom-0 left-1/2 z-50 w-full max-w-[480px] -translate-x-1/2 rounded-t-2xl bg-paper pb-10 shadow-xl"
         style={{ transition: "transform 0.25s ease" }}
       >
         {/* Drag handle */}
@@ -165,7 +167,7 @@ function AccountSheet({ onClose, onSignOut }: { onClose: () => void; onSignOut: 
           </div>
 
           {/* Locality details */}
-          <div className="mb-5 rounded-xl border border-slate-100 bg-slate-50 divide-y divide-slate-100">
+          <div className="mb-5 rounded-xl border border-slate-100 bg-cream divide-y divide-slate-100">
             <Row label="Ward" value={location?.ward_name ?? "—"} />
             <Row label="Ward No." value={location?.ward_no != null ? `#${location.ward_no}` : "—"} />
             <Row label="Zone" value={location?.zone ?? "—"} />

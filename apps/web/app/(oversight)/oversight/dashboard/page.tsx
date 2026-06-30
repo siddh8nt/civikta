@@ -4,16 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import type { OversightAlert } from "@/lib/types";
-import { IssueSearchBar } from "@/components/IssueSearchBar";
+import { OversightBanner } from "@/components/OversightBanner";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const SEV_STYLE: Record<string, string> = {
   watch:    "border-yellow-200 bg-yellow-50 text-yellow-900",
-  alert:    "border-orange-200 bg-orange-50 text-orange-900",
+  alert:    "border-amber-200 bg-amber-50 text-orange-900",
   critical: "border-red-200 bg-red-50 text-red-900",
 };
 const SEV_DOT: Record<string, string> = {
-  watch: "bg-yellow-400", alert: "bg-orange-400", critical: "bg-red-500",
+  watch: "bg-yellow-400", alert: "bg-amber-400", critical: "bg-red-500",
 };
 
 const CAT_LABEL: Record<string, string> = {
@@ -26,7 +26,7 @@ const SEV_LABEL: Record<string, string> = {
 };
 const SEV_PILL: Record<string, string> = {
   critical: "bg-red-100 text-red-700",
-  high:     "bg-orange-100 text-orange-700",
+  high:     "bg-amber-100 text-amber-800",
   medium:   "bg-yellow-100 text-yellow-700",
   low:      "bg-slate-100 text-slate-600",
 };
@@ -47,7 +47,7 @@ function StatCard({
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
       {value === null
         ? <Skeleton className="mb-1 h-8 w-16" />
-        : <div className={`text-2xl font-bold ${accent ?? "text-violet-700"}`}>{value}</div>}
+        : <div className={`text-2xl font-bold ${accent ?? "text-indigo-800"}`}>{value}</div>}
       <div className="text-xs font-medium text-slate-500">{label}</div>
       {sub && <div className="mt-0.5 text-xs text-slate-400">{sub}</div>}
     </div>
@@ -93,50 +93,28 @@ export default function OversightDashboardPage() {
   const s = summary;
 
   return (
-    <main className="dashboard-shell space-y-6">
+    <>
+    <OversightBanner />
+    <main className="dashboard-shell space-y-6 pt-6">
       {/* ── header ── */}
-      <div className="flex items-center justify-between">
-        <div>
-          <Link href="/" className="mb-1 inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-600 transition-colors">
-            ← Delhi Civic Portal
-          </Link>
-          <h1 className="text-xl font-bold text-slate-800">Oversight Dashboard</h1>
-          <p className="text-xs text-slate-400 mt-0.5">State-wide civic accountability · NCT Delhi</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="w-56">
-            <IssueSearchBar urlPrefix="/oversight/issues" />
-          </div>
-          <Link
-            href="/oversight/escalations"
-            className="rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-700 transition-colors"
-          >
-            🚨 Escalations
-          </Link>
-          <Link
-            href="/oversight/analytics"
-            className="rounded-lg bg-violet-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-violet-700 transition-colors"
-          >
-            Analytics Agent
-          </Link>
-          <Link href="/oversight/issues" className="text-sm text-slate-500 hover:text-slate-700">All issues →</Link>
-          <Link href="/oversight/hotspots" className="text-sm text-slate-500 hover:text-slate-700">Hotspots →</Link>
-        </div>
+      <div>
+        <h1 className="text-xl font-bold text-slate-800">Oversight Dashboard</h1>
+        <p className="text-xs text-slate-400 mt-0.5">State-wide civic accountability · NCT Delhi</p>
       </div>
 
       {/* ── primary stats ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Total issues"    value={s?.total_issues    ?? null} />
-        <StatCard label="Open"            value={s?.open_issues     ?? null} accent="text-orange-600" />
+        <StatCard label="Open"            value={s?.open_issues     ?? null} accent="text-amber-700" />
         <StatCard label="SLA breached"    value={s?.sla_breached_open ?? null} accent="text-red-600"
           sub={s ? `${s.sla_breach_rate_pct}% of open` : undefined} />
-        <StatCard label="Corroborations"  value={s?.total_corroborations ?? null} accent="text-violet-700" />
+        <StatCard label="Corroborations"  value={s?.total_corroborations ?? null} accent="text-indigo-800" />
       </div>
 
       {/* ── secondary stats ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard label="Resolved"          value={s?.resolved_issues   ?? null} accent="text-green-600" />
-        <StatCard label="Unresolved >7d"    value={s?.unresolved_over_7d ?? null} accent="text-orange-500" />
+        <StatCard label="Unresolved >7d"    value={s?.unresolved_over_7d ?? null} accent="text-amber-600" />
         <StatCard label="False closures"    value={s?.false_closures    ?? null} accent="text-red-500"
           sub="Resolutions disputed" />
         <StatCard label="Safety-flagged open" value={s?.safety_flagged_open ?? null} accent="text-red-700"
@@ -149,8 +127,11 @@ export default function OversightDashboardPage() {
         {/* AI Anomaly Alerts */}
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="mb-3 flex items-center gap-2">
-            <span className="text-sm font-semibold text-slate-700">⚡ AI Anomaly Alerts</span>
-            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs text-violet-700">proactive</span>
+            <svg className="h-4 w-4 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.563.563 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+            </svg>
+            <span className="text-sm font-semibold text-slate-700">AI Anomaly Alerts</span>
+            <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs text-indigo-800">proactive</span>
           </div>
 
           {alertsLoading ? (
@@ -180,7 +161,12 @@ export default function OversightDashboardPage() {
 
         {/* Most corroborated open issues */}
         <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-3 text-sm font-semibold text-slate-700">🔥 Most corroborated open</div>
+          <div className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700">
+            <svg className="h-4 w-4 text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941" />
+            </svg>
+            Most corroborated open
+          </div>
           {!s ? (
             <div className="space-y-2">{[1,2,3,4,5].map(i => <Skeleton key={i} className="h-12 w-full" />)}</div>
           ) : s.most_corroborated.length === 0 ? (
@@ -191,14 +177,14 @@ export default function OversightDashboardPage() {
                 <Link
                   key={m.id}
                   href={`/oversight/issues/${m.id}`}
-                  className="flex items-start justify-between rounded-lg border border-slate-100 p-2.5 text-sm hover:border-violet-200 hover:bg-violet-50 transition-colors"
+                  className="flex items-start justify-between rounded-lg border border-slate-100 p-2.5 text-sm hover:border-indigo-200 hover:bg-indigo-50 transition-colors"
                 >
                   <div className="min-w-0 pr-2">
                     <p className="truncate font-medium text-slate-700">{m.title}</p>
                     <p className="mt-0.5 text-xs text-slate-400">{m.ward} · {m.authority}</p>
                   </div>
                   <div className="shrink-0 text-right">
-                    <div className="text-xs font-semibold text-violet-700">✓ {m.corroboration_count}</div>
+                    <div className="text-xs font-semibold text-indigo-800">✓ {m.corroboration_count}</div>
                     <div className={`mt-0.5 rounded px-1 py-0.5 text-xs ${SEV_PILL[m.severity] ?? ""}`}>
                       {sevLabel(m.severity)}
                     </div>
@@ -231,13 +217,13 @@ export default function OversightDashboardPage() {
                 {s.authority_table.slice(0, 10).map((auth) => (
                   <tr key={auth.slug} className="hover:bg-slate-50">
                     <td className="py-2 font-medium text-slate-700">{auth.name}</td>
-                    <td className="py-2 text-right text-orange-600 font-semibold">{auth.open}</td>
+                    <td className="py-2 text-right text-amber-700 font-semibold">{auth.open}</td>
                     <td className="py-2 text-right text-slate-500">{auth.total}</td>
                     <td className="py-2 text-right text-red-500">{auth.sla_breached}</td>
                     <td className="py-2 text-right">
                       <span className={`rounded px-1.5 py-0.5 text-xs font-medium ${
                         auth.sla_breach_rate_pct >= 70 ? "bg-red-100 text-red-700"
-                        : auth.sla_breach_rate_pct >= 40 ? "bg-orange-100 text-orange-700"
+                        : auth.sla_breach_rate_pct >= 40 ? "bg-amber-100 text-amber-800"
                         : "bg-green-100 text-green-700"
                       }`}>
                         {auth.sla_breach_rate_pct}%
@@ -264,7 +250,7 @@ export default function OversightDashboardPage() {
                     <span className="w-28 shrink-0 text-slate-500 truncate">{catLabel(cat)}</span>
                     <div className="flex-1 rounded-full bg-slate-100 h-1.5">
                       <div
-                        className="h-1.5 rounded-full bg-violet-500"
+                        className="h-1.5 rounded-full bg-indigo-500"
                         style={{ width: `${(count / max) * 100}%` }}
                       />
                     </div>
@@ -288,7 +274,7 @@ export default function OversightDashboardPage() {
                       <div
                         className={`h-1.5 rounded-full ${
                           sev === "critical" ? "bg-red-500"
-                          : sev === "high"   ? "bg-orange-400"
+                          : sev === "high"   ? "bg-amber-400"
                           : sev === "medium" ? "bg-yellow-400"
                           : "bg-slate-300"
                         }`}
@@ -304,5 +290,6 @@ export default function OversightDashboardPage() {
         </div>
       )}
     </main>
+    </>
   );
 }

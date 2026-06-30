@@ -18,6 +18,13 @@ export default function MyReportsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
+  // Fade + rise in on mount, matching the My Locality page transition.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
   useEffect(() => {
     api.myReports()
       .then(async (data) => {
@@ -45,16 +52,21 @@ export default function MyReportsPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-24" style={{ maxWidth: 480, margin: "0 auto" }}>
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-100 px-4 py-3">
+    <main
+      className={`min-h-screen bg-cream pb-24 transition-all duration-300 ease-out ${
+        mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+      }`}
+      style={{ maxWidth: 480, margin: "0 auto" }}
+    >
+      <div className="sticky top-0 z-10 bg-paper border-b border-slate-200 px-4 py-3">
         <h1 className="text-base font-bold text-slate-900">My Reports</h1>
-        <p className="text-[11px] text-slate-400">Issues you've raised</p>
+        <p className="text-[11px] text-slate-500">Issues you've raised</p>
       </div>
 
       {loading && (
-        <div className="flex flex-col gap-3 p-4">
+        <div className="flex flex-col gap-2 p-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 rounded-xl bg-slate-100 animate-pulse" />
+            <div key={i} className="h-20 rounded-xl bg-slate-100 animate-pulse" />
           ))}
         </div>
       )}
@@ -80,7 +92,7 @@ export default function MyReportsPage() {
       )}
 
       {!loading && !error && issues.length > 0 && (
-        <div className="flex flex-col gap-3 p-4">
+        <div className="flex flex-col gap-2 p-4">
           {issues.map((issue) => (
             <IssueCard key={issue.id} issue={issue} />
           ))}

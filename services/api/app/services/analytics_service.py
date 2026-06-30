@@ -281,13 +281,18 @@ class AnalyticsService:
                 if "429" in err_str or "RESOURCE_EXHAUSTED" in err_str:
                     import re
                     retry_match = re.search(r"retry in ([\d.]+)s", err_str)
-                    wait_str = f" Retry in {retry_match.group(1)}s." if retry_match else ""
+                    wait_str = f" Retry in {retry_match.group(1)}s." if retry_match else " Please wait a few seconds and try again."
                     return {
-                        "answer": f"**Gemini quota exceeded.**{wait_str}",
+                        "answer": f"**Rate limit reached.** Gemini is receiving too many requests right now.{wait_str}",
                         "tool_calls": tool_calls,
                         "suggested_questions": [],
                     }
-                raise
+                log.error("Gemini loop error: %s", exc)
+                return {
+                    "answer": f"**Analysis failed.** Gemini returned an unexpected error. Please try a simpler question or retry in a moment.",
+                    "tool_calls": tool_calls,
+                    "suggested_questions": [],
+                }
 
             candidate = response.candidates[0].content
             fc_parts = [p for p in candidate.parts if getattr(p, "function_call", None)]

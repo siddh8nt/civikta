@@ -1,5 +1,5 @@
 "use client";
-import { statusLabel } from "@/lib/labels";
+import { statusLabel, categoryLabel, severityLabel } from "@/lib/labels";
 
 /**
  * Feed map (PRD §8.3). When NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set:
@@ -84,13 +84,12 @@ function FeedMapInner({ issues }: { issues: IssueSummary[] }) {
 
       {/* Bottom-sheet card */}
       {selected && (
-        <div className="absolute bottom-0 left-0 right-0 rounded-t-xl bg-white p-3 shadow-2xl">
+        <div className="absolute bottom-0 left-0 right-0 rounded-t-xl bg-paper p-3 shadow-2xl">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="truncate font-medium text-sm">{selected.title}</p>
               <p className="mt-0.5 text-xs text-slate-500">
-                🔥 {selected.urgency_score.toFixed(1)} · {statusLabel(selected.status)} ·{" "}
-                {selected.corroboration_count} corroborations
+                {statusLabel(selected.status)} · {selected.corroboration_count} corroborations
               </p>
             </div>
             <button
@@ -135,34 +134,115 @@ function FeedMapFallback({ issues }: { issues: IssueSummary[] }) {
   );
 }
 
+// ── Locality stats card — replaces the issue list below the map ────────────
+
+function LocalityStatsCard({ issues }: { issues: IssueSummary[] }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  if (issues.length === 0) {
+    return (
+      <div className="px-4 py-6 text-center text-sm text-slate-400">No open issues nearby.</div>
+    );
+  }
+
+  const bySeverity: Record<string, number> = {};
+  const byCategory: Record<string, IssueSummary[]> = {};
+  let totalCorroborations = 0;
+
+  for (const i of issues) {
+    bySeverity[i.severity] = (bySeverity[i.severity] ?? 0) + 1;
+    const cat = i.issue_category_slug ?? "other";
+    (byCategory[cat] ??= []).push(i);
+    totalCorroborations += i.corroboration_count;
+  }
+
+  const topCategories = Object.entries(byCategory).sort((a, b) => b[1].length - a[1].length);
+
+  return (
+    <div className="space-y-4 p-4">
+      <div className="flex items-baseline gap-2">
+        <span className="text-2xl font-bold text-slate-900">{issues.length}</span>
+        <span className="text-sm text-slate-500">open issue{issues.length !== 1 ? "s" : ""} nearby</span>
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {(["critical", "high", "medium", "low"] as const).map((sev) =>
+          bySeverity[sev] ? (
+            <span
+              key={sev}
+              className="rounded-full px-2.5 py-1 text-xs font-semibold"
+              style={{ backgroundColor: `${SEV_PIN[sev]?.bg}22`, color: SEV_PIN[sev]?.bg }}
+            >
+              {bySeverity[sev]} {severityLabel(sev)}
+            </span>
+          ) : null
+        )}
+      </div>
+
+      <div className="space-y-0.5">
+        <p className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">By category</p>
+        {topCategories.map(([slug, list]) => (
+          <div key={slug}>
+            <button
+              onClick={() => setExpanded(expanded === slug ? null : slug)}
+              className="flex w-full items-center justify-between rounded-lg py-2 text-sm active:bg-cream"
+            >
+              <span className="text-slate-700">{categoryLabel(slug)}</span>
+              <span className="flex items-center gap-1 text-slate-400">
+                {list.length}
+                <svg
+                  viewBox="0 0 16 16"
+                  className={`h-3 w-3 transition-transform ${expanded === slug ? "rotate-180" : ""}`}
+                  fill="none"
+                >
+                  <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+            </button>
+            {expanded === slug && (
+              <div className="space-y-1.5 pb-2">
+                {list.slice(0, 6).map((i) => (
+                  <Link
+                    key={i.id}
+                    href={`/issues/${i.id}`}
+                    className="block truncate rounded-lg border border-slate-200 bg-cream px-3 py-2 text-xs font-medium text-brand active:bg-slate-100"
+                  >
+                    {i.title}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <p className="border-t border-slate-100 pt-3 text-xs text-slate-500">
+        ✓ {totalCorroborations} corroboration{totalCorroborations !== 1 ? "s" : ""} from neighbours nearby
+      </p>
+    </div>
+  );
+}
+
 // ── Public export ──────────────────────────────────────────────────────────
 
 export function MapPlaceholder({ issues }: { issues: IssueSummary[] }) {
+  // Map view is for "what's still a problem nearby" — resolved/rejected
+  // issues are noise here; full detail (including closed issues) lives
+  // in the feed view already.
+  const unresolved = issues.filter((i) => i.status !== "resolved" && i.status !== "rejected");
+
   const mapView = MAPS_KEY ? (
     <APIProvider apiKey={MAPS_KEY}>
-      <FeedMapInner issues={issues} />
+      <FeedMapInner issues={unresolved} />
     </APIProvider>
   ) : (
-    <FeedMapFallback issues={issues} />
+    <FeedMapFallback issues={unresolved} />
   );
 
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-200">
+    <div className="overflow-hidden rounded-xl border border-slate-200 bg-paper">
       {mapView}
-      {/* Issue list below the map */}
-      <div className="divide-y divide-slate-100">
-        {issues.map((i) => (
-          <Link
-            key={i.id}
-            href={`/issues/${i.id}`}
-            className="flex items-center gap-2 p-2.5 text-sm"
-          >
-            <span>{SEV_ICON[i.severity] ?? "📍"}</span>
-            <span className="flex-1 truncate">{i.title}</span>
-            <span className="text-xs text-slate-400">🔥 {i.urgency_score.toFixed(1)}</span>
-          </Link>
-        ))}
-      </div>
+      <LocalityStatsCard issues={unresolved} />
     </div>
   );
 }

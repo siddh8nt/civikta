@@ -1,4 +1,4 @@
-"""Agentic complaint pipeline (PRD ง20, ง21).
+"""Agentic complaint pipeline (PRD ยง20, ยง21).
 
 This pipeline is opt-in via CIVIKTA_PIPELINE=agentic. It wires the existing
 agent-ready tools into the analyze step while preserving the deterministic

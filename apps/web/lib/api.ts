@@ -109,7 +109,13 @@ export const api = {
   // users
   upsertMe: (body: { name?: string; phone?: string; password_hash?: string; ward_no?: number | null; ward_name?: string | null; zone?: string | null; local_body_type?: string | null; home_lat?: number | null; home_lng?: number | null }) =>
     req<{ id: string }>(`/api/users/me`, { method: "POST", body: JSON.stringify(body) }),
-  getMe: () => req<{ id: string; name?: string; role: string }>(`/api/users/me`),
+  getMe: () =>
+    req<{
+      id: string; name?: string; role: string; phone?: string;
+      home_lat?: number | null; home_lng?: number | null;
+      ward_no?: number | null; ward_name?: string | null;
+      zone?: string | null; local_body_type?: string | null;
+    }>(`/api/users/me`),
   signin: (body: { phone: string; password_hash: string }) =>
     req<{ id: string; name?: string; phone?: string; home_lat?: number | null; home_lng?: number | null; ward_no?: number | null; ward_name?: string | null; zone?: string | null; local_body_type?: string | null }>(
       `/api/users/signin`,

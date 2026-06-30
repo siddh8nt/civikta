@@ -16,6 +16,22 @@ _SORTS = {
     "recent": lambda i: i.created_at.timestamp(),
 }
 
+# Portal-level identifier (used in URLs/login, e.g. "mcd") → the actual
+# primary_authority_slug values issues are routed to. MCD and NDMC are each
+# one portal covering several internal departments; everyone else maps 1:1
+# (with "police" naming the slug "delhi_police").
+_PORTAL_AUTHORITY_SLUGS: dict[str, list[str]] = {
+    "mcd": ["mcd_sanitation", "mcd_engineering", "mcd_horticulture", "mcd_public_health"],
+    "ndmc": ["ndmc_sanitation", "ndmc_civil", "ndmc_horticulture"],
+    "dcb": ["dcb_civic"],
+    "djb": ["djb"],
+    "pwd": ["pwd"],
+    "ifcd": ["ifcd"],
+    "dda": ["dda"],
+    "police": ["delhi_police"],
+    "nhai": ["nhai"],
+}
+
 
 class AuthorityService:
     def __init__(self, repo: Repository, issues: IssueService) -> None:
@@ -25,9 +41,14 @@ class AuthorityService:
     def queue(self, authority_slug: str | None = None, *, status: str | None = None,
               ward_no: int | None = None, severity: str | None = None,
               sort: str = "urgency") -> list[IssueSummary]:
+        # Expand a portal identifier (e.g. "mcd") into its department slugs;
+        # if it isn't a known portal, treat it as an exact slug as-is (e.g.
+        # a caller passing "mcd_sanitation" directly).
+        slugs = _PORTAL_AUTHORITY_SLUGS.get(authority_slug) if authority_slug else None
         items = self.repo.list_issues(
             statuses=[status] if status else None,
-            primary_authority_slug=authority_slug,
+            primary_authority_slug=authority_slug if not slugs else None,
+            primary_authority_slugs=slugs,
             ward_no=ward_no,
         )
         if severity:

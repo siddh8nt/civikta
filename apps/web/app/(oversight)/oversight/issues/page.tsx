@@ -6,7 +6,7 @@ import { api } from "@/lib/api";
 import type { IssueSummary } from "@/lib/types";
 import { SeverityBadge, StatusBadge } from "@/components/ui/badges";
 import { authorityLabel } from "@/lib/authorities";
-import { IssueSearchBar } from "@/components/IssueSearchBar";
+import { OversightBanner } from "@/components/OversightBanner";
 
 const STATUSES = ["", "submitted", "assigned", "in_progress", "pending_verification", "resolved", "reopened", "rejected"];
 const SEVERITIES = ["", "critical", "high", "medium", "low"];
@@ -29,23 +29,19 @@ export default function OversightIssueQueuePage() {
   const reopenedCount = issues.filter((i) => i.status === "reopened").length;
 
   return (
-    <main className="dashboard-shell">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">All Issues</h1>
-          {reopenedCount > 0 && (
-            <p className="text-xs text-rose-600 font-medium mt-0.5">
-              ⚠ {reopenedCount} escalated / reopened
-            </p>
-          )}
-        </div>
-        <div className="flex items-center gap-3">
-          <IssueSearchBar urlPrefix="/oversight/issues" />
-          <Link href="/oversight/escalations" className="rounded-lg bg-rose-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-rose-700 transition">
-            🚨 Escalations
-          </Link>
-          <Link href="/oversight/dashboard" className="text-sm text-slate-500">← Dashboard</Link>
-        </div>
+    <>
+    <OversightBanner />
+    <main className="dashboard-shell pt-6">
+      <div className="mb-4">
+        <h1 className="text-xl font-bold text-slate-900">All Issues</h1>
+        {reopenedCount > 0 && (
+          <p className="flex items-center gap-1 text-xs text-rose-700 font-medium mt-0.5">
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376C1.83 17.815 2.91 19.5 4.5 19.5h15c1.59 0 2.67-1.685 1.803-3.374L13.803 5.126c-.795-1.541-2.811-1.541-3.606 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
+            </svg>
+            {reopenedCount} escalated / reopened
+          </p>
+        )}
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -109,7 +105,7 @@ export default function OversightIssueQueuePage() {
                   className={`hover:bg-slate-50 ${i.status === "reopened" ? "bg-rose-50" : ""}`}
                 >
                   <td className="p-3">
-                    <Link href={`/oversight/issues/${i.id}`} className="font-medium text-violet-700 hover:underline">
+                    <Link href={`/oversight/issues/${i.id}`} className="font-medium text-indigo-800 hover:underline">
                       {i.title}
                     </Link>
                   </td>
@@ -131,5 +127,6 @@ export default function OversightIssueQueuePage() {
         </div>
       )}
     </main>
+    </>
   );
 }

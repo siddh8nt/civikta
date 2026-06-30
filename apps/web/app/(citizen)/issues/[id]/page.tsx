@@ -38,6 +38,15 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
   const load = () => api.issue(params.id).then(setIssue).catch(() => setErr(true));
   useEffect(() => { load(); }, [params.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Fade the real content in once it replaces the skeleton, instead of an
+  // instant snap-cut from skeleton to detail screen.
+  const [contentMounted, setContentMounted] = useState(false);
+  useEffect(() => {
+    if (!issue) return;
+    const id = requestAnimationFrame(() => setContentMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, [issue]);
+
   async function corroborate(body: { still_unresolved?: boolean; affected_too?: boolean }) {
     setBusy(true);
     try {
@@ -63,13 +72,14 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
   }
 
   if (err) return <main className="p-6 text-sm text-rose-500">Issue not found.</main>;
-  if (!issue) return <main className="p-6 text-sm text-slate-400">Loading…</main>;
+  if (!issue) return <IssueDetailSkeleton />;
 
   const status = issue.status;
   const isResolved = status === "resolved";
   const isReopened = status === "reopened";
   const isClosed = (status as string) === "closed";
   const isRejected = status === "rejected";
+  const isReporter = Boolean(currentUserId && issue.reporter_id === currentUserId);
 
   // â”€â”€ Escalation screen â”€â”€
   if (screen === "escalation") {
@@ -106,7 +116,7 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
           </div>
         ) : (
           <>
-            <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3 text-sm">
+            <div className="rounded-xl border border-slate-200 bg-paper p-4 space-y-3 text-sm">
               <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Escalation summary</p>
               <EscRow label="Filed" value={`${filedDaysAgo} day${filedDaysAgo !== 1 ? "s" : ""} ago`} />
               <EscRow
@@ -133,7 +143,7 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
               />
             </div>
 
-            <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] border-t border-slate-200 bg-white p-3 space-y-2">
+            <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] border-t border-slate-200 bg-paper p-3 space-y-2">
               <button
                 disabled={busy}
                 onClick={disputeResolution}
@@ -156,7 +166,11 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
 
   // ── Main detail screen ──
   return (
-    <main className="pb-28">
+    <main
+      className={`pb-8 transition-opacity duration-500 ease-out ${
+        contentMounted ? "opacity-100" : "opacity-0"
+      }`}
+    >
       {issue.media_urls.length > 0 && (
         <ImageCarousel urls={issue.media_urls} />
       )}
@@ -185,12 +199,12 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
         )}
         {isReopened && (
           <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-900">
-            <p className="font-semibold">Issue reopened â€” escalation in progress</p>
+            <p className="font-semibold">Issue reopened — escalation in progress</p>
             <p className="text-xs mt-0.5 text-rose-700">Supervisor and oversight have been notified.</p>
           </div>
         )}
         {isClosed && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+          <div className="rounded-xl border border-slate-200 bg-paper p-3 text-sm text-slate-600">
             <p className="font-semibold">Issue closed</p>
           </div>
         )}
@@ -222,7 +236,7 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
         </Section>
 
         <Section title="Jurisdiction">
-          <div className="rounded-lg bg-slate-50 p-3 text-sm">
+          <div className="rounded-lg border border-slate-200 bg-paper p-3 text-sm divide-y divide-slate-100">
             {issue.local_body_type && (
               <>
                 <Row k="Local body" v={issue.local_body_type} />
@@ -239,7 +253,7 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
         </Section>
 
         <Section title="Assigned Authority">
-          <div className="rounded-lg bg-slate-50 p-3 text-sm">
+          <div className="rounded-lg border border-slate-200 bg-paper p-3 text-sm divide-y divide-slate-100">
             <Row k="Responsible body" v={authorityLabel(issue.primary_authority_slug)} />
             {issue.secondary_authority_slug && (
               <Row k="Supporting body" v={authorityLabel(issue.secondary_authority_slug)} />
@@ -258,9 +272,8 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
           </div>
         </Section>
 
-        {/* Escalation â€” only for the original reporter after no acknowledgement or a missed deadline */}
+        {/* Escalation — only for the original reporter after no acknowledgement or a missed deadline */}
         {(() => {
-          const isReporter = currentUserId && issue.reporter_id === currentUserId;
           const authorityAcknowledged = issue.timeline.some(
             (e) => e.event_type === "authority_acknowledged"
           );
@@ -308,7 +321,7 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
                   "bg-slate-400"
                 }`} />
                 <span className="font-medium text-slate-800">{eventLabel(e.event_type)}</span>
-                <span className="ml-2 text-xs text-slate-400">
+                <span className="ml-2 text-xs text-slate-500">
                   {new Date(e.created_at).toLocaleString()}
                 </span>
                 {/* Deadline shown to citizens */}
@@ -351,69 +364,76 @@ export default function IssueDetailPage({ params }: { params: { id: string } }) 
             ))}
           </ol>
         </Section>
-      </div>
 
-      {/* â”€â”€ Bottom action bar â€” changes per status â”€â”€ */}
-      <div className="fixed bottom-16 left-1/2 z-20 flex w-full max-w-[480px] -translate-x-1/2 gap-2 border-t border-slate-200 bg-white p-3">
-
-        {/* RESOLVED: confirm or dispute */}
-        {isResolved && (
-          <>
-            <button
-              disabled={busy}
-              onClick={() => corroborate({ still_unresolved: false })}
-              className="flex-1 rounded-xl border border-green-500 py-2.5 text-sm font-semibold text-green-700 hover:bg-green-50 disabled:opacity-40"
-            >
-              ✓ Issue is fixed
-            </button>
-            <button
-              disabled={busy}
-              onClick={() => setScreen("escalation")}
-              className="flex-1 rounded-xl bg-rose-600 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-40"
-            >
-              Still not resolved
-            </button>
-          </>
-        )}
-
-        {/* ACTIVE: corroborate */}
-        {["submitted", "assigned", "in_progress", "pending_verification", "manual_review"].includes(status) && (
-          <>
+        {/* Inline action — "Still unresolved" only once the authority has
+            marked the issue resolved (dispute flow); otherwise "I'm affected
+            too" for any still-open issue, hidden from the original reporter
+            (they already filed it — corroborating their own report makes no
+            sense). No action for closed/rejected. */}
+        {isResolved ? (
+          <button
+            disabled={busy}
+            onClick={() => setScreen("escalation")}
+            className="w-full rounded-xl bg-rose-600 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 disabled:opacity-40"
+          >
+            Still unresolved
+          </button>
+        ) : (
+          !isClosed && !isRejected && !isReporter && (
             <button
               disabled={busy}
               onClick={() => corroborate({ affected_too: true })}
-              className="flex-1 rounded-xl border border-brand py-2.5 text-sm font-semibold text-brand disabled:opacity-40"
+              className="w-full rounded-xl border border-brand py-2.5 text-sm font-semibold text-brand disabled:opacity-40"
             >
               I&apos;m affected too
             </button>
-            <button
-              disabled={busy}
-              onClick={() => corroborate({ still_unresolved: true })}
-              className="flex-1 rounded-xl bg-brand py-2.5 text-sm font-semibold text-white disabled:opacity-40"
-            >
-              Still unresolved
-            </button>
-          </>
+          )
         )}
+      </div>
+    </main>
+  );
+}
 
-        {/* REOPENED */}
-        {isReopened && (
-          <button
-            disabled={busy}
-            onClick={() => corroborate({ still_unresolved: true })}
-            className="flex-1 rounded-xl bg-rose-600 py-2.5 text-sm font-semibold text-white disabled:opacity-40"
-          >
-            Add more evidence
-          </button>
-        )}
-
-        {/* CLOSED / REJECTED: no actions */}
-        {(isClosed || isRejected) && (
-          <div className="flex-1 rounded-xl border border-slate-200 py-2.5 text-center text-sm text-slate-400">
-            {isClosed ? "Issue closed" : "Issue rejected"}
+function IssueDetailSkeleton() {
+  return (
+    <main className="pb-8 animate-pulse">
+      <div className="h-52 w-full bg-slate-200" />
+      <div className="space-y-5 p-4">
+        <div className="space-y-2">
+          <div className="h-5 w-24 rounded-md bg-slate-200" />
+          <div className="flex gap-1.5">
+            <div className="h-5 w-16 rounded-full bg-slate-200" />
+            <div className="h-5 w-14 rounded-full bg-slate-200" />
+            <div className="h-5 w-20 rounded-full bg-slate-200" />
           </div>
-        )}
+          <div className="h-5 w-4/5 rounded bg-slate-200" />
+          <div className="h-3 w-1/2 rounded bg-slate-200" />
+        </div>
 
+        <div className="h-40 w-full rounded-xl bg-slate-200" />
+
+        <div className="space-y-1.5">
+          <div className="h-3 w-20 rounded bg-slate-200" />
+          <div className="h-3 w-full rounded bg-slate-200" />
+          <div className="h-3 w-5/6 rounded bg-slate-200" />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="h-3 w-24 rounded bg-slate-200" />
+          <div className="h-20 w-full rounded-lg bg-slate-200" />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="h-3 w-32 rounded bg-slate-200" />
+          <div className="h-16 w-full rounded-lg bg-slate-200" />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="h-3 w-36 rounded bg-slate-200" />
+          <div className="h-3 w-full rounded bg-slate-200" />
+          <div className="h-3 w-full rounded bg-slate-200" />
+          <div className="h-3 w-2/3 rounded bg-slate-200" />
+        </div>
       </div>
     </main>
   );
@@ -470,8 +490,8 @@ function ImageCarousel({ urls }: { urls: string[] }) {
 function IssueIdChip({ id }: { id: string }) {
   const short = id.slice(0, 8).toUpperCase();
   return (
-    <div className="mb-2 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 px-2 py-1">
-      <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">Issue ID</span>
+    <div className="mb-2 inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-paper px-2 py-1">
+      <span className="text-[10px] font-semibold uppercase tracking-widest text-slate-500">Issue ID</span>
       <span className="font-mono text-xs font-bold text-slate-700">CIV-{short}</span>
     </div>
   );
@@ -480,7 +500,7 @@ function IssueIdChip({ id }: { id: string }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-400">{title}</h2>
+      <h2 className="mb-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{title}</h2>
       {children}
     </section>
   );
@@ -488,9 +508,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Row({ k, v }: { k: string; v: string }) {
   return (
-    <div className="flex justify-between gap-3 py-0.5 text-sm">
-      <span className="text-slate-400">{k}</span>
-      <span className="text-right font-medium">{v}</span>
+    <div className="flex justify-between gap-3 py-1.5 text-sm">
+      <span className="text-slate-500">{k}</span>
+      <span className="text-right font-medium text-slate-900">{v}</span>
     </div>
   );
 }
